@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>ヨウのゲームホーム</title>
+    <style>
+      :root {
+        --bg: #eaf4fb;
+        --bg-ground: #7ec850;
+        --ink: #1d2b1f;
+        --ink-soft: #43584a;
+        --card: #ffffff;
+        --card-edge: #d8e6da;
+        --volcano: #ff8a3d;
+        --volcano-dark: #d95f14;
+        --mine: #2f9e6e;
+        --mine-dark: #1f7a53;
+        --shadow: rgba(29, 43, 31, 0.16);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #101c26;
+          --bg-ground: #2c5c33;
+          --ink: #eef6ee;
+          --ink-soft: #b9cbbd;
+          --card: #1d2c33;
+          --card-edge: #38504a;
+          --volcano: #ff9a52;
+          --volcano-dark: #e06a1e;
+          --mine: #3cb37f;
+          --mine-dark: #2a8a60;
+          --shadow: rgba(0, 0, 0, 0.45);
+        }
+      }
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", sans-serif;
+        background: var(--bg);
+        color: var(--ink);
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      main {
+        flex: 1;
+        width: 100%;
+        max-width: 880px;
+        margin: 0 auto;
+        padding: 40px 20px 56px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+      h1 {
+        font-size: clamp(30px, 6vw, 46px);
+        font-weight: 800;
+        letter-spacing: 0.02em;
+        text-align: center;
+        margin: 8px 0 10px;
+      }
+      .lead {
+        font-size: clamp(16px, 3.4vw, 19px);
+        color: var(--ink-soft);
+        text-align: center;
+        margin: 0 0 36px;
+        line-height: 1.7;
+      }
+      .cards {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 22px;
+        width: 100%;
+      }
+      @media (max-width: 620px) {
+        .cards { grid-template-columns: 1fr; }
+        main { padding-top: 28px; }
+      }
+      .game-card {
+        display: flex;
+        flex-direction: column;
+        background: var(--card);
+        border: 2px solid var(--card-edge);
+        border-radius: 24px;
+        overflow: hidden;
+        text-decoration: none;
+        color: var(--ink);
+        box-shadow: 0 10px 24px var(--shadow);
+        transition: transform 0.15s ease, box-shadow 0.15s ease;
+      }
+      .game-card:hover, .game-card:focus-visible {
+        transform: translateY(-4px);
+        box-shadow: 0 16px 32px var(--shadow);
+        outline: none;
+      }
+      .game-card:active { transform: translateY(-1px); }
+      .art {
+        display: block;
+        width: 100%;
+        height: auto;
+      }
+      .card-body {
+        padding: 20px 22px 24px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 1;
+      }
+      .game-name {
+        font-size: clamp(21px, 4.4vw, 26px);
+        font-weight: 800;
+        line-height: 1.35;
+        margin: 0;
+      }
+      .game-desc {
+        font-size: 16px;
+        line-height: 1.75;
+        color: var(--ink-soft);
+        margin: 0;
+        flex: 1;
+      }
+      .play-btn {
+        margin-top: 8px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 52px;
+        padding: 12px 20px;
+        border-radius: 999px;
+        font-size: 18px;
+        font-weight: 800;
+        color: #fff;
+        text-align: center;
+      }
+      .play-volcano { background: var(--volcano); }
+      .game-card:hover .play-volcano, .game-card:focus-visible .play-volcano { background: var(--volcano-dark); }
+      .play-mine { background: var(--mine); }
+      .game-card:hover .play-mine, .game-card:focus-visible .play-mine { background: var(--mine-dark); }
+      .play-btn .arrow { font-size: 20px; line-height: 1; }
+      footer {
+        text-align: center;
+        padding: 0 20px 28px;
+        color: var(--ink-soft);
+        font-size: 14px;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1>ヨウのゲームホーム</h1>
+      <p class="lead">あそびたいゲームを えらんでね。<br />2つのゲームが ここに そろっているよ。</p>
+
+      <div class="cards">
+        <a class="game-card" href="hai-yokeru.html">
+          <svg class="art" viewBox="0 0 400 210" role="img" aria-label="桜島と ふってくる灰の絵">
+            <rect width="400" height="210" fill="#bfe3f7"/>
+            <circle cx="52" cy="38" r="22" fill="#ffd94d"/>
+            <ellipse cx="320" cy="34" rx="42" ry="13" fill="#ffffff" opacity="0.85"/>
+            <ellipse cx="120" cy="26" rx="34" ry="11" fill="#ffffff" opacity="0.8"/>
+            <!-- きのこ型の煙 -->
+            <g fill="#8d99a6">
+              <ellipse cx="200" cy="52" rx="52" ry="20"/>
+              <ellipse cx="200" cy="70" rx="30" ry="16"/>
+              <rect x="188" y="66" width="24" height="26" rx="10"/>
+            </g>
+            <!-- 桜島 -->
+            <path d="M70 210 L168 92 L186 78 L214 78 L232 92 L330 210 Z" fill="#6b7c8c"/>
+            <path d="M168 92 L186 78 L214 78 L232 92 L218 104 L182 104 Z" fill="#54636f"/>
+            <path d="M70 210 L168 92 L186 104 L120 210 Z" fill="#7d8fa0" opacity="0.6"/>
+            <!-- 海 -->
+            <rect y="196" width="400" height="14" fill="#3d9bd6"/>
+            <!-- ふってくる灰 -->
+            <g fill="#5a6672">
+              <circle cx="90" cy="120" r="5"/>
+              <circle cx="130" cy="150" r="4"/>
+              <circle cx="270" cy="118" r="5"/>
+              <circle cx="308" cy="152" r="4"/>
+              <circle cx="240" cy="140" r="3.5"/>
+              <circle cx="160" cy="112" r="3.5"/>
+            </g>
+            <!-- よける人 -->
+            <g>
+              <circle cx="200" cy="168" r="9" fill="#ffcf9e"/>
+              <rect x="191" y="176" width="18" height="20" rx="6" fill="#ff8a3d"/>
+            </g>
+          </svg>
+          <div class="card-body">
+            <h2 class="game-name">桜島の灰をよけるゲーム</h2>
+            <p class="game-desc">桜島から 灰が どんどん ふってくるよ。左右に うごいて よけながら、長く 生きのころう。だんだん 速くなるから むずかしいよ。チャンピオン記録は 2010点！</p>
+            <span class="play-btn play-volcano">あそぶ <span class="arrow">▶</span></span>
+          </div>
+        </a>
+
+        <a class="game-card" href="kouzan-hori.html">
+          <svg class="art" viewBox="0 0 400 210" role="img" aria-label="山と鉱物の絵">
+            <rect width="400" height="210" fill="#cdeeda"/>
+            <circle cx="348" cy="36" r="20" fill="#ffd94d"/>
+            <ellipse cx="70" cy="30" rx="36" ry="11" fill="#ffffff" opacity="0.85"/>
+            <!-- 山 -->
+            <path d="M30 210 L150 60 L185 30 L215 30 L250 60 L370 210 Z" fill="#8a6f4d"/>
+            <path d="M185 30 L215 30 L250 60 L228 66 L172 66 L150 60 Z" fill="#f4f8ff"/>
+            <path d="M30 210 L150 60 L172 66 L110 210 Z" fill="#9c7f57" opacity="0.7"/>
+            <!-- 岩石ゾーン -->
+            <path d="M120 210 L160 150 L240 150 L280 210 Z" fill="#5d5348"/>
+            <!-- 鉱物 -->
+            <g>
+              <rect x="168" y="168" width="16" height="16" rx="3" transform="rotate(20 176 176)" fill="#7ee0ff"/>
+              <rect x="212" y="180" width="14" height="14" rx="3" transform="rotate(-15 219 187)" fill="#ffd94d"/>
+              <rect x="196" y="156" width="12" height="12" rx="3" transform="rotate(35 202 162)" fill="#c9a7ff"/>
+              <circle cx="150" cy="192" r="6" fill="#3a3a3a"/>
+            </g>
+            <!-- ツルハシ -->
+            <g transform="rotate(28 300 120)">
+              <rect x="294" y="96" width="9" height="58" rx="4" fill="#a9743f"/>
+              <path d="M262 100 Q300 78 338 100 L332 110 Q300 92 268 110 Z" fill="#9fb3c8"/>
+            </g>
+            <rect y="202" width="400" height="8" fill="#6aa84f"/>
+          </svg>
+          <div class="card-body">
+            <h2 class="game-name">鉱山掘りゲーム</h2>
+            <p class="game-desc">山を タップして 掘って、鉱物を あつめよう。水晶や 金、ダイヤモンドも 出てくるよ。鉱物を 売って ツルハシを 強くしたり、資材を 集めて 自分の家を 建てたりも できるよ。</p>
+            <span class="play-btn play-mine">あそぶ <span class="arrow">▶</span></span>
+          </div>
+        </a>
+      </div>
+    </main>
+    <footer>ヨウが つくったゲームの ホームページ</footer>
+  </body>
+</html>
