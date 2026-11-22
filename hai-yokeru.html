@@ -463,6 +463,16 @@
           }
         }
 
+        // ===== 遊ばれた回数（裏側で静かに数えるだけ・画面には出さない） =====
+        var PLAYS_HIT_URL = "https://countapi.mileshilliard.com/api/v1/hit/hai-yokeru-plays-2026";
+        function countPlay() {
+          try {
+            fetch(PLAYS_HIT_URL).catch(function () {});
+          } catch (e) {
+            // 数えられなくてもゲームは止めない
+          }
+        }
+
         // ===== 音（WebAudioの小さな電子音） =====
         var audioCtx = null;
         var soundOn = true;
@@ -994,6 +1004,7 @@
         // ===== 操作 =====
         function startGame() {
           ensureAudio();
+          countPlay(); // スタートのたびに遊ばれた回数を +1（裏側だけ）
           resetGame();
           if (championMsgEl) championMsgEl.textContent = "";
           state = "playing";
