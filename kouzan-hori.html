@@ -844,6 +844,14 @@
       }
       loadChampion();
 
+      // ---------- play count (shared counter, silent — not shown on screen) ----------
+      var PLAY_HIT = "https://countapi.mileshilliard.com/api/v1/hit/kouzan-hori-plays-2026";
+      function countPlay() {
+        try {
+          fetch(PLAY_HIT).then(function (r) { return r.json(); }).catch(function () {});
+        } catch (e) {}
+      }
+
       // ---------- digging ----------
       function pickMineral(rareMul) {
         // レア以上（鉄から）の重みだけ rareMul 倍にする
@@ -1189,6 +1197,7 @@
       }
       // 最初から：山1・スコア0・コイン0・ツルハシ初期・コレクション空に戻す
       function startFresh() {
+        countPlay();
         mountain = 1; score = 0; coins = 0; pickLevel = 0; houseLevel = 0;
         materials = { wood: 0, stoneMat: 0, ironMat: 0, glass: 0 };
         houseDesign = { roof: "triangle", color: 0 };
