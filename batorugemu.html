@@ -1,0 +1,796 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>バトルゲーム</title>
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2.5rem; }
+      * { box-sizing: border-box; }
+      :root{
+        --bg:#eef1f4;
+        --bg2:#dde4ea;
+        --panel:#ffffff;
+        --panel2:#eef4f8;
+        --ink:#1f2732;
+        --ink2:#5d6b7a;
+        --line:#c3cfda;
+        --accent:#e4572e;
+        --accent2:#b93c1c;
+        --steel:#2e4a62;
+        --steel2:#3d617f;
+        --gold:#d99a26;
+        --good:#2e7d4f;
+        --bad:#c93a2e;
+        --shadow:0 10px 30px rgba(31,39,50,.16);
+        --radius:16px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#14181e;
+          --bg2:#1b212a;
+          --panel:#212933;
+          --panel2:#27313e;
+          --ink:#eef3f7;
+          --ink2:#a7b4c0;
+          --line:#39434f;
+          --accent:#f06a3d;
+          --accent2:#c94e27;
+          --steel:#16222e;
+          --steel2:#1e303f;
+          --gold:#e5ab3d;
+          --good:#5cb887;
+          --bad:#ef6a5c;
+          --shadow:0 10px 30px rgba(0,0,0,.45);
+        }
+      }
+      html,body{margin:0;padding:0;}
+      body{
+        background:var(--bg);
+        color:var(--ink);
+        font-family:"Hiragino Maru Gothic ProN","Hiragino Sans","Yu Gothic UI","Yu Gothic",system-ui,-apple-system,"Segoe UI",sans-serif;
+        -webkit-font-smoothing:antialiased;
+      }
+      .wrap{max-width:760px;margin:0 auto;padding:14px 14px 28px;}
+      header.top{
+        display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+        padding:6px 2px 12px;
+      }
+      .title-block{flex:1 1 auto;min-width:180px;}
+      h1{margin:0;font-size:30px;line-height:1.15;letter-spacing:.02em;font-weight:900;}
+      h1 .mark{color:var(--accent);}
+      .subtitle{margin:4px 0 0;color:var(--ink2);font-size:14px;line-height:1.5;}
+      .champion-badge{
+        background:var(--steel);color:#eaf2f8;border-radius:12px;
+        padding:10px 14px;min-width:150px;box-shadow:var(--shadow);
+      }
+      .champion-badge .label{font-size:11px;letter-spacing:.08em;opacity:.75;font-weight:700;}
+      .champion-badge .value{font-size:24px;font-weight:900;line-height:1.1;}
+      .champion-badge .value small{font-size:13px;font-weight:700;opacity:.8;}
+
+      .hud{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:10px;}
+      .hud-card{
+        background:var(--panel);border:1.5px solid var(--line);border-radius:var(--radius);
+        padding:10px 12px;text-align:center;
+      }
+      .hud-card .k{font-size:12px;color:var(--ink2);font-weight:800;letter-spacing:.06em;}
+      .hud-card .v{font-size:28px;font-weight:900;line-height:1.15;font-variant-numeric:tabular-nums;}
+      .hearts{font-size:20px;letter-spacing:1px;line-height:1.45;white-space:nowrap;}
+      .hearts .off{opacity:.22;filter:grayscale(1);}
+      .timebar{height:8px;background:var(--bg2);border-radius:99px;overflow:hidden;margin-top:6px;border:1px solid var(--line);}
+      .timebar > div{height:100%;background:var(--gold);width:100%;transition:width .2s linear;}
+      .timebar > div.low{background:var(--accent);}
+
+      .stage{
+        position:relative;border-radius:20px;overflow:hidden;
+        box-shadow:var(--shadow);
+        border:2px solid var(--steel);
+        background:linear-gradient(180deg,#33566e 0%,#48748c 58%,#5c5648 58.2%,#756a55 100%);
+        touch-action:manipulation;user-select:none;-webkit-user-select:none;
+      }
+      canvas{display:block;width:100%;height:auto;cursor:pointer;}
+      .overlay{
+        position:absolute;inset:0;display:flex;
+        text-align:center;padding:18px;background:rgba(13,20,27,.74);color:#eef5fa;
+        overflow-y:auto;
+      }
+      .overlay-inner{margin:auto;display:flex;flex-direction:column;align-items:center;max-width:100%;}
+      @media (max-width:560px){
+        .overlay{padding:12px;}
+        .overlay h2{font-size:23px !important;}
+        .overlay p{font-size:13.5px !important;line-height:1.6 !important;margin:4px 0 !important;}
+        .overlay .btn{font-size:16px;padding:12px 28px;min-height:48px;}
+        .overlay .hint-line{font-size:12px;margin-top:8px;}
+        .overlay .big-score{font-size:42px !important;}
+        .hearts{font-size:16px !important;letter-spacing:0 !important;}
+      }
+      .overlay[hidden]{display:none;}
+      .overlay h2{margin:0 0 6px;font-size:30px;font-weight:900;}
+      .overlay p{margin:6px 0;font-size:15px;line-height:1.7;max-width:440px;}
+      .overlay .big-score{font-size:52px;font-weight:900;line-height:1;color:#ffd977;}
+      .overlay .big-score small{font-size:18px;}
+      .new-record{
+        display:none;background:var(--accent);color:#fff;font-weight:900;
+        padding:6px 14px;border-radius:99px;font-size:14px;margin:8px 0 2px;
+      }
+      .new-record.show{display:inline-block;}
+      .btn{
+        appearance:none;border:none;cursor:pointer;
+        font-family:inherit;font-weight:900;font-size:18px;
+        border-radius:99px;padding:14px 34px;min-height:52px;
+        background:var(--accent);color:#fff;box-shadow:0 6px 0 var(--accent2),0 12px 24px rgba(0,0,0,.35);
+        transition:transform .08s ease, box-shadow .08s ease;
+      }
+      .btn:active{transform:translateY(4px);box-shadow:0 2px 0 var(--accent2),0 6px 12px rgba(0,0,0,.35);}
+      .btn.gold{background:var(--gold);box-shadow:0 6px 0 #9a711f,0 12px 24px rgba(0,0,0,.35);color:#2b2118;}
+      .btn.gold:active{box-shadow:0 2px 0 #9a711f,0 6px 12px rgba(0,0,0,.35);}
+      .hint-line{font-size:13px;opacity:.85;margin-top:12px;}
+
+      .howto{
+        margin-top:14px;background:var(--panel);border:1.5px solid var(--line);
+        border-radius:var(--radius);padding:16px 18px;
+      }
+      .howto h3{margin:0 0 10px;font-size:18px;font-weight:900;}
+      .howto p{margin:0 0 12px;font-size:14.5px;line-height:1.75;color:var(--ink);}
+      .items{display:grid;grid-template-columns:1fr;gap:8px;}
+      @media (min-width:560px){ .items{grid-template-columns:1fr 1fr 1fr;} }
+      @media (max-width:520px){ h1{font-size:26px;} }
+      .item{
+        display:flex;align-items:center;gap:10px;background:var(--panel2);
+        border:1.5px solid var(--line);border-radius:12px;padding:9px 12px;
+      }
+      .item .dot{width:26px;height:26px;border-radius:7px;flex:0 0 auto;border:2px solid rgba(0,0,0,.18);}
+      .item .name{font-weight:900;font-size:15px;}
+      .item .pts{margin-left:auto;font-weight:900;color:var(--good);font-size:15px;white-space:nowrap;}
+      .item .desc{font-size:12px;color:var(--ink2);display:block;font-weight:600;}
+      .rule-note{
+        margin-top:12px;font-size:13.5px;line-height:1.7;color:var(--ink2);
+        border-top:1.5px dashed var(--line);padding-top:10px;
+      }
+      footer{margin-top:14px;text-align:center;color:var(--ink2);font-size:12.5px;line-height:1.7;}
+      ruby rt{font-size:.52em;color:var(--ink2);}
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header class="top">
+        <div class="title-block">
+          <h1><span class="mark">⚔</span> バトルゲーム</h1>
+          <p class="subtitle">出てきたロボットをタップして、<ruby>剣<rt>けん</rt></ruby>でたたかおう！</p>
+        </div>
+        <div class="champion-badge" aria-label="チャンピオン記録">
+          <div class="label">🏆 チャンピオン<ruby>記録<rt>きろく</rt></ruby></div>
+          <div class="value"><span id="championValue">…</span> <small>点</small></div>
+        </div>
+      </header>
+
+      <div class="hud" role="status" aria-live="polite">
+        <div class="hud-card">
+          <div class="k">スコア</div>
+          <div class="v" id="scoreValue">0</div>
+        </div>
+        <div class="hud-card">
+          <div class="k">のこり<ruby>時間<rt>じかん</rt></ruby></div>
+          <div class="v" id="timeValue">60</div>
+          <div class="timebar"><div id="timeBarFill"></div></div>
+        </div>
+        <div class="hud-card">
+          <div class="k">たいりょく</div>
+          <div class="hearts" id="heartsValue" aria-label="ハート5つ">❤️❤️❤️❤️❤️</div>
+        </div>
+      </div>
+
+      <div class="stage" id="stage">
+        <canvas id="gameCanvas" width="720" height="520" aria-label="ロボットとたたかうゲーム画面"></canvas>
+
+        <div class="overlay" id="startOverlay">
+          <div class="overlay-inner">
+            <h2>⚔ たたかう<ruby>準備<rt>じゅんび</rt></ruby>はいい？</h2>
+            <p>ロボットが1体ずつ出てくるよ。<br><strong>ロボットをタップ</strong>すると<ruby>剣<rt>けん</rt></ruby>で<ruby>攻撃<rt>こうげき</rt></ruby>！<br>HPを0にするとたおせるよ。</p>
+            <p>ロボットも<ruby>攻撃<rt>こうげき</rt></ruby>してくるよ。<strong>ピカッと光ったら</strong>、もうすぐ<ruby>攻撃<rt>こうげき</rt></ruby>の合図。<br>ハートが0になるとゲームオーバーだよ。</p>
+            <button class="btn" id="startBtn" type="button">▶ スタート（60秒）</button>
+            <div class="hint-line">パソコンはクリック、スマホ・タブレットはタップでたたかってね</div>
+          </div>
+        </div>
+
+        <div class="overlay" id="overOverlay" hidden>
+          <div class="overlay-inner">
+            <h2 id="overTitle">⏰ 時間切れ！</h2>
+            <div class="new-record" id="newRecordBadge">🎉 新記録！チャンピオンになったよ！</div>
+            <p style="margin-bottom:2px;">あなたのスコア</p>
+            <div class="big-score"><span id="finalScore">0</span><small> 点</small></div>
+            <p id="overDetail">たおしたロボット：0体</p>
+            <button class="btn gold" id="retryBtn" type="button">↻ もう一回あそぶ</button>
+            <div class="hint-line">チャンピオン記録は みんなで共有しているよ</div>
+          </div>
+        </div>
+      </div>
+
+      <section class="howto">
+        <h3>🎯 あそびかた</h3>
+        <p>ロボットが1体ずつ出てくるよ。ロボットを<strong>タップ</strong>すると<ruby>剣<rt>けん</rt></ruby>で<ruby>攻撃<rt>こうげき</rt></ruby>して、HPが1へるよ。HPバーを0にするとたおせて、次のロボットが出てくるよ。たおすほど、強いロボットが出やすくなるよ。</p>
+        <div class="items">
+          <div class="item"><span class="dot" style="background:#7fb069;"></span><span><span class="name">小型ロボット</span><span class="desc">HP 3 ・ すばやくたおせる</span></span><span class="pts">50点</span></div>
+          <div class="item"><span class="dot" style="background:#4a7fa5;"></span><span><span class="name">中型ロボット</span><span class="desc">HP 6 ・ ちょっと手強い</span></span><span class="pts">100点</span></div>
+          <div class="item"><span class="dot" style="background:#a03d2d;"></span><span><span class="name">大型ロボット</span><span class="desc">HP 12 ・ 大きくて強い！</span></span><span class="pts">250点</span></div>
+        </div>
+        <p class="rule-note">⚠ ロボットは約3秒ごとに<ruby>攻撃<rt>こうげき</rt></ruby>してくるよ。<ruby>攻撃<rt>こうげき</rt></ruby>の前にはピカッと光って予告するから、光る前にすばやくたおそう。ハートは5つ。0になるとゲームオーバー。<ruby>制限時間<rt>せいげんじかん</rt></ruby>は60秒だよ。</p>
+      </section>
+
+      <footer>出てくるのはロボットだけです。人や動物は出てきません。</footer>
+    </div>
+
+    <script>
+    (function(){
+      "use strict";
+      var COUNT_BASE = "https://countapi.mileshilliard.com/api/v1";
+      var CHAMPION_KEY = "battle-champion-2026";
+      var PLAYS_KEY = "battle-plays-2026";
+
+      var canvas = document.getElementById("gameCanvas");
+      var ctx = canvas.getContext("2d");
+      var stage = document.getElementById("stage");
+      var scoreEl = document.getElementById("scoreValue");
+      var timeEl = document.getElementById("timeValue");
+      var timeBar = document.getElementById("timeBarFill");
+      var heartsEl = document.getElementById("heartsValue");
+      var championEl = document.getElementById("championValue");
+      var startOverlay = document.getElementById("startOverlay");
+      var overOverlay = document.getElementById("overOverlay");
+      var startBtn = document.getElementById("startBtn");
+      var retryBtn = document.getElementById("retryBtn");
+      var finalScoreEl = document.getElementById("finalScore");
+      var overTitleEl = document.getElementById("overTitle");
+      var overDetailEl = document.getElementById("overDetail");
+      var newRecordBadge = document.getElementById("newRecordBadge");
+
+      var W = 720, H = 520;
+      var DPR = Math.min(window.devicePixelRatio || 1, 2);
+
+      function fitCanvas(){
+        var rect = stage.getBoundingClientRect();
+        var w = rect.width;
+        var h = w * (H / W);
+        canvas.style.height = h + "px";
+        canvas.width = Math.round(W * DPR);
+        canvas.height = Math.round(H * DPR);
+      }
+      fitCanvas();
+      window.addEventListener("resize", fitCanvas);
+
+      // ---------- Champion (shared, CountAPI) ----------
+      var champion = 0;
+      function loadChampion(){
+        fetch(COUNT_BASE + "/get/" + CHAMPION_KEY)
+          .then(function(r){ return r.json(); })
+          .then(function(d){
+            var v = (d && typeof d.value === "number") ? d.value : 0;
+            champion = v;
+            championEl.textContent = v;
+          })
+          .catch(function(){ championEl.textContent = "0"; });
+      }
+      function saveChampionIfBeaten(score){
+        if (score > champion){
+          champion = score;
+          championEl.textContent = score;
+          fetch(COUNT_BASE + "/set/" + CHAMPION_KEY + "?value=" + score).catch(function(){});
+          return true;
+        }
+        return false;
+      }
+      function countPlay(){
+        fetch(COUNT_BASE + "/hit/" + PLAYS_KEY).catch(function(){});
+      }
+      loadChampion();
+
+      // ---------- Sound (Web Audio) ----------
+      var audioCtx = null;
+      function ensureAudio(){
+        if (!audioCtx){
+          try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch(e){ audioCtx = null; }
+        }
+        if (audioCtx && audioCtx.state === "suspended"){ audioCtx.resume(); }
+      }
+      function playSlash(){
+        if (!audioCtx) return;
+        var t = audioCtx.currentTime;
+        var dur = 0.14;
+        var buffer = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * dur), audioCtx.sampleRate);
+        var data = buffer.getChannelData(0);
+        for (var i = 0; i < data.length; i++){ data[i] = (Math.random() * 2 - 1) * (1 - i / data.length); }
+        var src = audioCtx.createBufferSource(); src.buffer = buffer;
+        var filter = audioCtx.createBiquadFilter();
+        filter.type = "bandpass"; filter.Q.value = 1.1;
+        filter.frequency.setValueAtTime(700, t);
+        filter.frequency.exponentialRampToValueAtTime(3400, t + dur * 0.7);
+        var gain = audioCtx.createGain();
+        gain.gain.setValueAtTime(0.45, t);
+        gain.gain.exponentialRampToValueAtTime(0.01, t + dur);
+        src.connect(filter); filter.connect(gain); gain.connect(audioCtx.destination);
+        src.start(t);
+        // metallic clang
+        [1560, 2340].forEach(function(f, i){
+          var osc = audioCtx.createOscillator();
+          var g = audioCtx.createGain();
+          osc.type = "sine"; osc.frequency.value = f;
+          g.gain.setValueAtTime(0.16 / (i + 1), t);
+          g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+          osc.connect(g); g.connect(audioCtx.destination);
+          osc.start(t); osc.stop(t + 0.2);
+        });
+      }
+      function playDefeat(){
+        if (!audioCtx) return;
+        var t = audioCtx.currentTime;
+        // falling zap
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = "sawtooth";
+        osc.frequency.setValueAtTime(620, t);
+        osc.frequency.exponentialRampToValueAtTime(70, t + 0.35);
+        g.gain.setValueAtTime(0.22, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + 0.38);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.4);
+        // clatter of parts
+        for (var i = 0; i < 5; i++){
+          var tt = t + 0.12 + i * 0.07;
+          var o = audioCtx.createOscillator();
+          var gg = audioCtx.createGain();
+          o.type = "square"; o.frequency.value = 300 + Math.random() * 700;
+          gg.gain.setValueAtTime(0.1, tt);
+          gg.gain.exponentialRampToValueAtTime(0.001, tt + 0.06);
+          o.connect(gg); gg.connect(audioCtx.destination);
+          o.start(tt); o.stop(tt + 0.07);
+        }
+        // happy blip
+        [523, 659, 784].forEach(function(f, i){
+          var tt2 = t + 0.3 + i * 0.08;
+          var o2 = audioCtx.createOscillator();
+          var g2 = audioCtx.createGain();
+          o2.type = "triangle"; o2.frequency.value = f;
+          g2.gain.setValueAtTime(0.2, tt2);
+          g2.gain.exponentialRampToValueAtTime(0.01, tt2 + 0.14);
+          o2.connect(g2); g2.connect(audioCtx.destination);
+          o2.start(tt2); o2.stop(tt2 + 0.15);
+        });
+      }
+      function playEnemyAttack(){
+        if (!audioCtx) return;
+        var t = audioCtx.currentTime;
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = "square";
+        osc.frequency.setValueAtTime(180, t);
+        osc.frequency.exponentialRampToValueAtTime(880, t + 0.16);
+        g.gain.setValueAtTime(0.18, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + 0.2);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.22);
+      }
+      function playHurt(){
+        if (!audioCtx) return;
+        var t = audioCtx.currentTime;
+        var osc = audioCtx.createOscillator();
+        var g = audioCtx.createGain();
+        osc.type = "triangle";
+        osc.frequency.setValueAtTime(300, t);
+        osc.frequency.exponentialRampToValueAtTime(110, t + 0.22);
+        g.gain.setValueAtTime(0.3, t);
+        g.gain.exponentialRampToValueAtTime(0.01, t + 0.25);
+        osc.connect(g); g.connect(audioCtx.destination);
+        osc.start(t); osc.stop(t + 0.27);
+      }
+
+      // ---------- Game state ----------
+      var TYPES = {
+        small:  { hp: 3,  pts: 50,  w: 120, h: 100, body: "#7fb069", dark: "#55793f", light: "#a7c98b", eye: "#ffe066", label: "小型ロボット" },
+        medium: { hp: 6,  pts: 100, w: 165, h: 140, body: "#4a7fa5", dark: "#31597a", light: "#7ba7c4", eye: "#7df9ff", label: "中型ロボット" },
+        large:  { hp: 12, pts: 250, w: 220, h: 185, body: "#a03d2d", dark: "#6f2a1f", light: "#c46a58", eye: "#ffb347", label: "大型ロボット" }
+      };
+      var GROUND_Y = 452;
+
+      var playing = false;
+      var score = 0;
+      var hearts = 5;
+      var defeated = 0;
+      var timeLeft = 60;
+      var lastTs = 0;
+      var enemy = null;       // {type, hp, maxHp, age, hitFlash, spawnT}
+      var parts = [];         // flying parts after defeat
+      var partsTimer = 0;
+      var sparks = [];        // hit sparks
+      var slashes = [];       // sword slash effects
+      var popups = [];        // floating score text
+      var shake = 0;
+      var hurtFlash = 0;
+      var elapsed = 0;
+
+      function pickType(){
+        var pLarge = Math.min(0.05 + defeated * 0.022, 0.35);
+        var pMedium = Math.min(0.25 + defeated * 0.016, 0.45);
+        var r = Math.random();
+        if (r < pLarge) return "large";
+        if (r < pLarge + pMedium) return "medium";
+        return "small";
+      }
+      function spawnEnemy(){
+        var key = pickType();
+        var t = TYPES[key];
+        enemy = { key: key, def: t, hp: t.hp, maxHp: t.hp, age: 0, hitFlash: 0, spawnT: 0 };
+      }
+
+      function updateHUD(){
+        scoreEl.textContent = score;
+        timeEl.textContent = Math.max(0, Math.ceil(timeLeft));
+        var pct = Math.max(0, timeLeft / 60 * 100);
+        timeBar.style.width = pct + "%";
+        if (timeLeft <= 10) timeBar.classList.add("low"); else timeBar.classList.remove("low");
+        var s = "";
+        for (var i = 0; i < 5; i++){
+          s += (i < hearts) ? "❤️" : '<span class="off">🤍</span>';
+        }
+        heartsEl.innerHTML = s;
+        heartsEl.setAttribute("aria-label", "ハート" + hearts + "つ");
+      }
+
+      function startGame(){
+        ensureAudio();
+        countPlay();
+        score = 0; hearts = 5; defeated = 0; timeLeft = 60; elapsed = 0;
+        parts = []; sparks = []; slashes = []; popups = [];
+        partsTimer = 0; shake = 0; hurtFlash = 0;
+        spawnEnemy();
+        playing = true;
+        startOverlay.hidden = true;
+        overOverlay.hidden = true;
+        updateHUD();
+      }
+      function endGame(reason){
+        playing = false;
+        var isRecord = saveChampionIfBeaten(score);
+        overTitleEl.textContent = (reason === "hearts") ? "💥 ハートがなくなった！" : "⏰ 時間切れ！";
+        finalScoreEl.textContent = score;
+        overDetailEl.textContent = "たおしたロボット：" + defeated + "体　／　チャンピオン記録：" + champion + "点";
+        newRecordBadge.classList.toggle("show", isRecord);
+        overOverlay.hidden = false;
+      }
+
+      function burstParts(e){
+        var cx = W / 2, cy = GROUND_Y - e.def.h / 2;
+        var colors = [e.def.body, e.def.dark, e.def.light, "#cfd8dc", "#90a4ae"];
+        parts = [];
+        for (var i = 0; i < 16; i++){
+          parts.push({
+            x: cx + (Math.random() - 0.5) * e.def.w * 0.7,
+            y: cy + (Math.random() - 0.5) * e.def.h * 0.7,
+            vx: (Math.random() - 0.5) * 520,
+            vy: -(160 + Math.random() * 320),
+            rot: Math.random() * Math.PI * 2,
+            vr: (Math.random() - 0.5) * 14,
+            size: 10 + Math.random() * 22,
+            color: colors[i % colors.length],
+            round: Math.random() < 0.35
+          });
+        }
+        partsTimer = 0.85;
+      }
+
+      function hitEnemy(px, py){
+        if (!enemy) return;
+        enemy.hp -= 1;
+        enemy.hitFlash = 0.12;
+        playSlash();
+        slashes.push({ x: px, y: py, t: 0 });
+        for (var i = 0; i < 7; i++){
+          sparks.push({
+            x: px, y: py,
+            vx: (Math.random() - 0.5) * 420,
+            vy: (Math.random() - 0.5) * 420,
+            t: 0, life: 0.3 + Math.random() * 0.15
+          });
+        }
+        if (enemy.hp <= 0){
+          var e = enemy;
+          enemy = null;
+          score += e.def.pts;
+          defeated += 1;
+          popups.push({ x: W / 2, y: GROUND_Y - e.def.h - 46, t: 0, text: "+" + e.def.pts + "点" });
+          burstParts(e);
+          playDefeat();
+          updateHUD();
+        }
+      }
+
+      function enemyAttack(){
+        hearts -= 1;
+        shake = 0.35;
+        hurtFlash = 0.3;
+        playEnemyAttack();
+        playHurt();
+        updateHUD();
+        if (hearts <= 0){
+          endGame("hearts");
+        }
+      }
+
+      // ---------- Drawing ----------
+      function rr(x, y, w, h, r){
+        ctx.beginPath();
+        ctx.moveTo(x + r, y);
+        ctx.arcTo(x + w, y, x + w, y + h, r);
+        ctx.arcTo(x + w, y + h, x, y + h, r);
+        ctx.arcTo(x, y + h, x, y, r);
+        ctx.arcTo(x, y, x + w, y, r);
+        ctx.closePath();
+      }
+
+      function drawBackground(){
+        // sky panels / hangar feel
+        ctx.fillStyle = "rgba(255,255,255,0.05)";
+        for (var i = 0; i < 5; i++){
+          ctx.fillRect(40 + i * 140, 36, 100, 130);
+        }
+        ctx.fillStyle = "rgba(255,255,255,0.10)";
+        ctx.fillRect(0, GROUND_Y, W, 3);
+        // ground stripes
+        ctx.fillStyle = "rgba(0,0,0,0.13)";
+        for (var j = 0; j < 8; j++){
+          ctx.beginPath();
+          ctx.moveTo(30 + j * 92, H - 8);
+          ctx.lineTo(70 + j * 92, H - 8);
+          ctx.lineTo(58 + j * 92, GROUND_Y + 14);
+          ctx.lineTo(30 + j * 92, GROUND_Y + 14);
+          ctx.closePath(); ctx.fill();
+        }
+        if (hurtFlash > 0){
+          ctx.fillStyle = "rgba(220,50,30," + (hurtFlash * 0.55) + ")";
+          ctx.fillRect(0, 0, W, H);
+        }
+      }
+
+      function drawRobot(e, now){
+        var d = e.def;
+        var bob = Math.sin(now * 2.2) * 4;
+        var cx = W / 2;
+        var baseY = GROUND_Y + bob * 0.3;
+        var w = d.w, h = d.h;
+        var x = cx - w / 2, y = baseY - h;
+        var warning = e.age >= 2.2 && e.age < 3.0;
+        var flashOn = warning && Math.floor(now * 9) % 2 === 0;
+
+        // shadow
+        ctx.fillStyle = "rgba(0,0,0,0.28)";
+        ctx.beginPath();
+        ctx.ellipse(cx, GROUND_Y + 10, w * 0.42, 10, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // legs
+        ctx.fillStyle = d.dark;
+        rr(cx - w * 0.30, baseY - 16, w * 0.2, 18, 4); ctx.fill();
+        rr(cx + w * 0.10, baseY - 16, w * 0.2, 18, 4); ctx.fill();
+
+        // arms
+        ctx.fillStyle = d.dark;
+        rr(x - 16, y + h * 0.3, 16, h * 0.42, 7); ctx.fill();
+        rr(x + w, y + h * 0.3, 16, h * 0.42, 7); ctx.fill();
+        // hands
+        ctx.fillStyle = "#cfd8dc";
+        ctx.beginPath(); ctx.arc(x - 8, y + h * 0.76, 8, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(x + w + 8, y + h * 0.76, 8, 0, Math.PI * 2); ctx.fill();
+
+        // body
+        ctx.fillStyle = flashOn ? "#ffd54f" : d.body;
+        if (e.hitFlash > 0) ctx.fillStyle = "#ffffff";
+        rr(x, y + h * 0.26, w, h * 0.62, 12); ctx.fill();
+        // chest light
+        ctx.fillStyle = flashOn ? "#e4572e" : d.light;
+        rr(x + w * 0.32, y + h * 0.42, w * 0.36, h * 0.2, 6); ctx.fill();
+        ctx.fillStyle = warning ? "#ff3d00" : "#ffecb3";
+        ctx.beginPath(); ctx.arc(cx, y + h * 0.52, Math.max(5, w * 0.055), 0, Math.PI * 2); ctx.fill();
+
+        // head
+        var hw = w * 0.62, hh = h * 0.3;
+        var hx = cx - hw / 2, hy = y + bob * 0.4;
+        ctx.fillStyle = flashOn ? "#ffd54f" : d.light;
+        if (e.hitFlash > 0) ctx.fillStyle = "#ffffff";
+        rr(hx, hy, hw, hh, 10); ctx.fill();
+        // antenna
+        ctx.strokeStyle = d.dark; ctx.lineWidth = 4;
+        ctx.beginPath(); ctx.moveTo(cx, hy); ctx.lineTo(cx, hy - 14); ctx.stroke();
+        ctx.fillStyle = warning ? "#ff3d00" : d.eye;
+        ctx.beginPath(); ctx.arc(cx, hy - 19, 6, 0, Math.PI * 2); ctx.fill();
+        // eyes
+        ctx.fillStyle = "#263238";
+        rr(hx + hw * 0.14, hy + hh * 0.3, hw * 0.72, hh * 0.36, 6); ctx.fill();
+        ctx.fillStyle = warning ? "#ff5252" : d.eye;
+        var ew = hw * 0.13;
+        ctx.beginPath(); ctx.arc(cx - hw * 0.18, hy + hh * 0.48, ew / 1.6, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath(); ctx.arc(cx + hw * 0.18, hy + hh * 0.48, ew / 1.6, 0, Math.PI * 2); ctx.fill();
+        // mouth grille
+        ctx.fillStyle = "rgba(38,50,56,0.55)";
+        for (var m = 0; m < 3; m++){
+          ctx.fillRect(cx - 14 + m * 11, hy + hh * 0.76, 6, 3);
+        }
+        // large robot shoulder pads
+        if (e.key === "large"){
+          ctx.fillStyle = d.dark;
+          rr(x - 24, y + h * 0.2, 26, 20, 6); ctx.fill();
+          rr(x + w - 2, y + h * 0.2, 26, 20, 6); ctx.fill();
+        }
+
+        // warning mark
+        if (warning){
+          ctx.font = "900 40px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillStyle = (Math.floor(now * 9) % 2 === 0) ? "#ff3d00" : "#ffd54f";
+          ctx.fillText("！", cx + w / 2 + 30, hy + 6);
+        }
+
+        // HP bar
+        var bw = Math.max(130, w + 30), bh = 16;
+        var bx = cx - bw / 2, by = hy - 52;
+        ctx.fillStyle = "rgba(10,16,22,0.65)";
+        rr(bx - 3, by - 3, bw + 6, bh + 6, 8); ctx.fill();
+        ctx.fillStyle = "#37474f";
+        rr(bx, by, bw, bh, 5); ctx.fill();
+        var ratio = Math.max(0, e.hp / e.maxHp);
+        ctx.fillStyle = ratio > 0.5 ? "#66bb6a" : (ratio > 0.25 ? "#ffa726" : "#ef5350");
+        if (ratio > 0){ rr(bx, by, bw * ratio, bh, 5); ctx.fill(); }
+        ctx.font = "900 13px sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("HP " + e.hp + " / " + e.maxHp, cx, by + 13);
+        // name
+        ctx.font = "700 14px sans-serif";
+        ctx.fillStyle = "rgba(255,255,255,0.9)";
+        ctx.fillText(d.label, cx, by - 10);
+      }
+
+      function draw(now){
+        ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+        ctx.clearRect(0, 0, W, H);
+        var sx = 0, sy = 0;
+        if (shake > 0){
+          sx = (Math.random() - 0.5) * 12 * shake * 3;
+          sy = (Math.random() - 0.5) * 8 * shake * 3;
+        }
+        ctx.save();
+        ctx.translate(sx, sy);
+        drawBackground();
+        if (enemy) drawRobot(enemy, now);
+        // parts
+        for (var i = 0; i < parts.length; i++){
+          var p = parts[i];
+          ctx.save();
+          ctx.translate(p.x, p.y);
+          ctx.rotate(p.rot);
+          ctx.fillStyle = p.color;
+          if (p.round){ ctx.beginPath(); ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2); ctx.fill(); }
+          else { ctx.fillRect(-p.size / 2, -p.size / 2, p.size, p.size * 0.72); }
+          ctx.restore();
+        }
+        // sparks
+        for (var j = 0; j < sparks.length; j++){
+          var s = sparks[j];
+          ctx.fillStyle = "rgba(255,213,79," + Math.max(0, 1 - s.t / s.life) + ")";
+          ctx.beginPath(); ctx.arc(s.x, s.y, 4, 0, Math.PI * 2); ctx.fill();
+        }
+        // slashes
+        for (var k = 0; k < slashes.length; k++){
+          var sl = slashes[k];
+          var a = Math.max(0, 1 - sl.t / 0.18);
+          ctx.strokeStyle = "rgba(255,255,255," + a + ")";
+          ctx.lineWidth = 5;
+          ctx.lineCap = "round";
+          ctx.beginPath();
+          ctx.moveTo(sl.x - 42, sl.y + 42);
+          ctx.lineTo(sl.x + 42, sl.y - 42);
+          ctx.stroke();
+          ctx.strokeStyle = "rgba(125,249,255," + a * 0.7 + ")";
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(sl.x - 34, sl.y + 50);
+          ctx.lineTo(sl.x + 50, sl.y - 34);
+          ctx.stroke();
+        }
+        // popups
+        ctx.textAlign = "center";
+        for (var q = 0; q < popups.length; q++){
+          var pu = popups[q];
+          ctx.font = "900 30px sans-serif";
+          ctx.fillStyle = "rgba(255,217,119," + Math.max(0, 1 - pu.t / 0.9) + ")";
+          ctx.fillText(pu.text, pu.x, pu.y - pu.t * 46);
+        }
+        ctx.restore();
+      }
+
+      // ---------- Main loop ----------
+      function loop(ts){
+        var now = ts / 1000;
+        var dt = lastTs ? Math.min(0.05, now - lastTs) : 0;
+        lastTs = now;
+        if (playing){
+          elapsed += dt;
+          timeLeft -= dt;
+          if (timeLeft <= 0){
+            timeLeft = 0;
+            updateHUD();
+            draw(now);
+            endGame("time");
+            requestAnimationFrame(loop);
+            return;
+          }
+          if (enemy){
+            enemy.age += dt;
+            if (enemy.hitFlash > 0) enemy.hitFlash -= dt;
+            if (enemy.age >= 3.0){
+              enemy.age = 0;
+              enemyAttack();
+            }
+          } else if (partsTimer > 0){
+            partsTimer -= dt;
+            if (partsTimer <= 0){ parts = []; spawnEnemy(); }
+          }
+          // physics
+          for (var i = 0; i < parts.length; i++){
+            var p = parts[i];
+            p.vy += 900 * dt;
+            p.x += p.vx * dt; p.y += p.vy * dt;
+            p.rot += p.vr * dt;
+            if (p.y > GROUND_Y + 16){ p.y = GROUND_Y + 16; p.vy *= -0.35; p.vx *= 0.7; }
+          }
+          for (var j = sparks.length - 1; j >= 0; j--){
+            var s = sparks[j];
+            s.t += dt; s.x += s.vx * dt; s.y += s.vy * dt;
+            if (s.t >= s.life) sparks.splice(j, 1);
+          }
+          for (var k = slashes.length - 1; k >= 0; k--){
+            slashes[k].t += dt;
+            if (slashes[k].t >= 0.18) slashes.splice(k, 1);
+          }
+          for (var q = popups.length - 1; q >= 0; q--){
+            popups[q].t += dt;
+            if (popups[q].t >= 0.9) popups.splice(q, 1);
+          }
+          if (shake > 0) shake -= dt;
+          if (hurtFlash > 0) hurtFlash -= dt;
+          updateHUD();
+        }
+        draw(now);
+        requestAnimationFrame(loop);
+      }
+      requestAnimationFrame(loop);
+
+      // ---------- Input ----------
+      function canvasPos(ev){
+        var rect = canvas.getBoundingClientRect();
+        var cx = (ev.touches ? ev.touches[0].clientX : ev.clientX);
+        var cy = (ev.touches ? ev.touches[0].clientY : ev.clientY);
+        return { x: (cx - rect.left) * (W / rect.width), y: (cy - rect.top) * (H / rect.height) };
+      }
+      function onTap(ev){
+        if (!playing || !enemy) return;
+        var pos = canvasPos(ev);
+        var d = enemy.def;
+        var bob = Math.sin(performance.now() / 1000 * 2.2) * 4;
+        var x0 = W / 2 - d.w / 2 - 26, x1 = W / 2 + d.w / 2 + 26;
+        var y0 = GROUND_Y + bob * 0.3 - d.h - 30, y1 = GROUND_Y + 14;
+        if (pos.x >= x0 && pos.x <= x1 && pos.y >= y0 && pos.y <= y1){
+          ev.preventDefault();
+          hitEnemy(pos.x, pos.y);
+        }
+      }
+      canvas.addEventListener("pointerdown", onTap);
+      canvas.addEventListener("touchstart", function(ev){ if (playing) ev.preventDefault(); }, { passive: false });
+
+      startBtn.addEventListener("click", startGame);
+      retryBtn.addEventListener("click", startGame);
+      updateHUD();
+    })();
+    </script>
+  </body>
+</html>
