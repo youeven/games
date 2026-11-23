@@ -1,0 +1,1047 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <link rel="icon" href="data:," />
+    <title>森の狩りゲーム</title>
+    <style>
+      button, [role="button"], select, summary, input:not([type="checkbox"], [type="radio"]) { min-height: 2rem; }
+
+      :root {
+        --bg: #f3f6ec;
+        --panel: #ffffff;
+        --panel-edge: #d8dfc8;
+        --ink: #2c3324;
+        --ink-soft: #5a6650;
+        --accent: #3e7d3a;
+        --accent-strong: #2f612c;
+        --accent-ink: #ffffff;
+        --coin: #b8860b;
+        --warn: #b3541e;
+        --sky-top: #aee2f5;
+        --sky-bottom: #e8f7e3;
+        --ground: #79b657;
+        --ground-dark: #5f9c43;
+        --shadow: 0 4px 14px rgba(44, 51, 36, 0.14);
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          --bg: #1c241a;
+          --panel: #28331f;
+          --panel-edge: #43543a;
+          --ink: #eef3e4;
+          --ink-soft: #b9c4a8;
+          --accent: #6fbf5e;
+          --accent-strong: #8fd07e;
+          --accent-ink: #16240f;
+          --coin: #e8bc4a;
+          --warn: #f0955e;
+          --sky-top: #274a63;
+          --sky-bottom: #3d5c3a;
+          --ground: #4d7d38;
+          --ground-dark: #3d662c;
+          --shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+        }
+      }
+
+      * { box-sizing: border-box; }
+      html, body { margin: 0; padding: 0; }
+      body {
+        background: var(--bg);
+        color: var(--ink);
+        font-family: "Hiragino Maru Gothic ProN", "Hiragino Sans", "Yu Gothic UI", "Yu Gothic", "Noto Sans JP", sans-serif;
+        line-height: 1.6;
+      }
+      .wrap { max-width: 880px; margin: 0 auto; padding: 14px 14px 40px; }
+
+      h1 {
+        font-size: 1.55rem; margin: 4px 0 2px; letter-spacing: 0.02em;
+      }
+      .lead { color: var(--ink-soft); margin: 0 0 12px; font-size: 0.98rem; }
+      ruby rt { font-size: 0.55em; }
+
+      /* ---------- HUD ---------- */
+      .hud {
+        display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 10px;
+      }
+      .hud .chip {
+        background: var(--panel); border: 2px solid var(--panel-edge);
+        border-radius: 999px; padding: 6px 14px; font-weight: 700;
+        font-size: 1rem; display: inline-flex; align-items: center; gap: 6px;
+      }
+      .hud .chip small { font-weight: 400; color: var(--ink-soft); font-size: 0.78rem; }
+      .hud .chip.coin b { color: var(--coin); }
+      .hud .chip.time b { font-variant-numeric: tabular-nums; }
+      .hud .chip.time.low b { color: var(--warn); }
+
+      /* ---------- Stage ---------- */
+      .stage-frame {
+        position: relative; border-radius: 18px; overflow: hidden;
+        box-shadow: var(--shadow); border: 3px solid var(--panel-edge);
+      }
+      #stage {
+        position: relative; width: 100%; height: min(58vw, 430px); min-height: 300px;
+        background: linear-gradient(to bottom, var(--sky-top) 0%, var(--sky-bottom) 62%, var(--ground) 62%, var(--ground-dark) 100%);
+        cursor: crosshair; touch-action: none; user-select: none; -webkit-user-select: none;
+        overflow: hidden;
+      }
+      .scene { position: absolute; inset: 0; pointer-events: none; }
+      .scene svg { width: 100%; height: 100%; display: block; }
+
+      .animal {
+        position: absolute; left: 0; top: 0; will-change: transform;
+        pointer-events: none;
+      }
+      .animal .body { will-change: transform; }
+      .animal svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.25)); }
+
+      .tree {
+        position: absolute; bottom: 8px; z-index: 15; pointer-events: none;
+        transform-origin: 50% 100%;
+      }
+      .tree svg { display: block; width: 100%; height: auto; filter: drop-shadow(0 3px 3px rgba(0,0,0,0.2)); }
+      .tree.shake { animation: treeShake 0.45s ease; }
+      @keyframes treeShake {
+        0% { transform: rotate(0deg); }
+        20% { transform: rotate(-3deg); }
+        45% { transform: rotate(2.6deg); }
+        70% { transform: rotate(-1.6deg); }
+        100% { transform: rotate(0deg); }
+      }
+
+      .bow-status { font-weight: 800; font-size: 0.95rem; }
+      .bow-status.ok { color: var(--accent-strong); }
+      .bow-status.lack { color: var(--warn); }
+      .bow-status.done { color: var(--ink-soft); }
+
+      .tap-ring {
+        position: absolute; border: 3px solid #fff; border-radius: 50%;
+        pointer-events: none; transform: translate(-50%, -50%);
+        animation: ring 0.35s ease-out forwards;
+        box-shadow: 0 0 0 2px rgba(0,0,0,0.15);
+      }
+      @keyframes ring {
+        from { width: 10px; height: 10px; opacity: 0.95; }
+        to { width: 64px; height: 64px; opacity: 0; }
+      }
+      .poof {
+        position: absolute; pointer-events: none; transform: translate(-50%, -50%);
+        width: 14px; height: 14px; border-radius: 50%;
+        background: radial-gradient(circle, #ffffff 0%, rgba(255,255,255,0) 70%);
+        animation: poof 0.4s ease-out forwards;
+      }
+      @keyframes poof {
+        from { width: 14px; height: 14px; opacity: 1; }
+        to { width: 90px; height: 90px; opacity: 0; }
+      }
+      .float-text {
+        position: absolute; pointer-events: none; transform: translate(-50%, -50%);
+        font-weight: 800; font-size: 1.02rem; color: #fff;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.55), 0 0 8px rgba(0,0,0,0.25);
+        animation: floatUp 0.95s ease-out forwards; white-space: nowrap; z-index: 30;
+      }
+      @keyframes floatUp {
+        from { opacity: 0; margin-top: 6px; }
+        15% { opacity: 1; }
+        to { opacity: 0; margin-top: -44px; }
+      }
+
+      .stage-overlay {
+        position: absolute; inset: 0; display: flex; flex-direction: column;
+        align-items: center; justify-content: center; text-align: center;
+        background: rgba(20, 32, 16, 0.45); color: #fff; padding: 18px; z-index: 40;
+      }
+      .stage-overlay h2 { margin: 0 0 6px; font-size: 1.5rem; }
+      .stage-overlay p { margin: 0 0 14px; max-width: 30em; font-size: 0.98rem; }
+      .stage-overlay .result-lines { font-size: 1.08rem; font-weight: 700; margin-bottom: 14px; line-height: 1.9; }
+      .hidden { display: none !important; }
+
+      .btn {
+        appearance: none; border: none; cursor: pointer; font: inherit; font-weight: 800;
+        border-radius: 999px; padding: 10px 22px; min-height: 48px;
+        background: var(--accent); color: var(--accent-ink);
+        box-shadow: 0 3px 0 rgba(0,0,0,0.22);
+      }
+      .btn:active { transform: translateY(2px); box-shadow: 0 1px 0 rgba(0,0,0,0.22); }
+      .btn:disabled { opacity: 0.45; cursor: not-allowed; transform: none; }
+      .btn.sub {
+        background: var(--panel); color: var(--ink); border: 2px solid var(--panel-edge);
+        box-shadow: none; min-height: 44px; padding: 8px 18px;
+      }
+      .btn.big { font-size: 1.15rem; padding: 12px 30px; }
+
+      .controls { display: flex; flex-wrap: wrap; gap: 8px; margin: 10px 0 4px; }
+
+      /* ---------- Panels ---------- */
+      .panels { display: grid; grid-template-columns: 1fr; gap: 14px; margin-top: 16px; }
+      @media (min-width: 720px) { .panels { grid-template-columns: 1fr 1fr; } .panel.wide { grid-column: 1 / -1; } }
+      .panel {
+        background: var(--panel); border: 2px solid var(--panel-edge);
+        border-radius: 16px; padding: 16px; box-shadow: var(--shadow);
+      }
+      .panel h2 { margin: 0 0 10px; font-size: 1.18rem; }
+      .panel p { margin: 6px 0; }
+      .muted { color: var(--ink-soft); font-size: 0.92rem; }
+
+      .mat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+      .mat {
+        border: 2px solid var(--panel-edge); border-radius: 12px; padding: 10px 12px;
+        display: flex; align-items: center; gap: 10px;
+      }
+      .mat .dot { width: 26px; height: 26px; border-radius: 8px; flex: none; }
+      .mat b { font-size: 1.25rem; font-variant-numeric: tabular-nums; }
+      .mat span { color: var(--ink-soft); font-size: 0.85rem; display: block; line-height: 1.3; }
+
+      .row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+      .cost { font-weight: 700; }
+      .cost .lack { color: var(--warn); }
+
+      .choices { display: flex; flex-wrap: wrap; gap: 8px; }
+      .choice {
+        border: 2px solid var(--panel-edge); background: var(--panel); color: var(--ink);
+        border-radius: 12px; padding: 8px 14px; cursor: pointer; font: inherit; font-weight: 700;
+        min-height: 44px; display: inline-flex; align-items: center; gap: 8px;
+      }
+      .choice[aria-pressed="true"] { border-color: var(--accent); background: color-mix(in srgb, var(--accent) 14%, var(--panel)); }
+      .swatch { width: 22px; height: 22px; border-radius: 6px; border: 1px solid rgba(0,0,0,0.25); flex: none; }
+
+      .yard {
+        border-radius: 12px; padding: 10px;
+        background: linear-gradient(to bottom, var(--sky-top), var(--sky-bottom) 55%, var(--ground) 55%, var(--ground-dark));
+        display: flex; align-items: flex-end; justify-content: center; min-height: 210px;
+      }
+      .yard svg { max-width: 100%; height: auto; }
+      .stage-name { text-align: center; font-weight: 800; margin-top: 8px; font-size: 1.05rem; }
+
+      table.points { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+      table.points th, table.points td { padding: 6px 8px; text-align: left; border-bottom: 1px solid var(--panel-edge); }
+      table.points td.num, table.points th.num { text-align: right; font-variant-numeric: tabular-nums; }
+      table.points tr:last-child td { border-bottom: none; }
+
+      .champion {
+        margin-top: 16px; text-align: center; font-weight: 800; font-size: 1.05rem;
+        background: var(--panel); border: 2px dashed var(--coin); color: var(--ink);
+        border-radius: 14px; padding: 10px;
+      }
+      .champion b { color: var(--coin); font-size: 1.3rem; }
+
+      @media (prefers-reduced-motion: reduce) {
+        .tap-ring, .poof, .float-text, .tree.shake { animation-duration: 0.01s; }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="wrap">
+      <h1>森の<ruby>狩<rt>か</rt></ruby>りゲーム</h1>
+      <p class="lead">森に出てくる動物をタップしてつかまえよう。集めた<ruby>素材<rt>そざい</rt></ruby>とコインで、自分の家を大きくしていくゲームだよ。当てても血は出ない、やさしい狩りだよ。動物は速くて、急に走ったり向きを変えたりするよ。森の木の後ろに隠れた動物は、矢が木に当たって取れないよ。</p>
+
+      <div class="hud" aria-label="いまの状態">
+        <span class="chip">スコア <b id="hudScore">0</b></span>
+        <span class="chip coin">コイン <b id="hudCoins">0</b></span>
+        <span class="chip time" id="timeChip">のこり <b id="hudTime">60</b><small>秒</small></span>
+        <span class="chip"><small>つかまえた数</small> <b id="hudCaught">0</b></span>
+      </div>
+
+      <div class="stage-frame">
+        <div id="stage" role="application" aria-label="狩りの森。動物をタップしてつかまえる">
+          <div class="scene" aria-hidden="true">
+            <svg viewBox="0 0 800 430" preserveAspectRatio="xMidYMax slice">
+              <circle cx="690" cy="60" r="34" fill="#ffd94d" opacity="0.9"/>
+              <path d="M0 268 Q 200 218 420 258 T 800 250 V430 H0 Z" fill="#69a84c" opacity="0.55"/>
+              <g fill="#3f7a34">
+                <path d="M40 268 l26 -86 l26 86 Z"/><path d="M52 268 l14 -52 l14 52 Z" fill="#356b2b"/>
+                <rect x="60" y="262" width="10" height="22" fill="#7a5230"/>
+                <path d="M120 275 l22 -70 l22 70 Z"/><rect x="136" y="270" width="9" height="18" fill="#7a5230"/>
+                <path d="M660 262 l28 -92 l28 92 Z"/><path d="M672 262 l16 -56 l16 56 Z" fill="#356b2b"/>
+                <rect x="682" y="256" width="11" height="24" fill="#7a5230"/>
+                <path d="M740 275 l20 -64 l20 64 Z"/><rect x="754" y="270" width="8" height="16" fill="#7a5230"/>
+                <path d="M230 272 l18 -56 l18 56 Z"/><rect x="243" y="268" width="7" height="14" fill="#7a5230"/>
+                <path d="M540 270 l18 -58 l18 58 Z"/><rect x="553" y="266" width="7" height="14" fill="#7a5230"/>
+              </g>
+              <g fill="#4c8a3d">
+                <ellipse cx="90" cy="404" rx="46" ry="12"/><ellipse cx="720" cy="398" rx="52" ry="13"/>
+                <ellipse cx="400" cy="416" rx="60" ry="12"/>
+              </g>
+            </svg>
+          </div>
+
+          <div class="stage-overlay" id="startOverlay">
+            <h2>森へ出発！</h2>
+            <p>動物が左右から出てくるよ。タップで当てるとつかまえられるよ。1回の狩りは60秒。クマはレアで100点！動物は速くなって、急にダッシュしたり向きを変えたりするよ。木の後ろに隠れた動物をねらうと、矢が木に当たって取れないよ。木の手前にいる動物をねらおう。</p>
+            <button class="btn big" id="startBtn" type="button">狩りスタート</button>
+          </div>
+
+          <div class="stage-overlay hidden" id="pauseOverlay">
+            <h2>一時停止中</h2>
+            <p>休けい中だよ。つづけるボタンを押してね。</p>
+            <button class="btn big" id="resumeBtn" type="button">つづける</button>
+          </div>
+
+          <div class="stage-overlay hidden" id="resultOverlay">
+            <h2>狩りおわり！</h2>
+            <div class="result-lines" id="resultLines"></div>
+            <div class="row" style="justify-content:center">
+              <button class="btn big" id="againBtn" type="button">もう一度狩り</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="btn sub" id="pauseBtn" type="button" disabled>ポーズ</button>
+        <button class="btn sub" id="soundBtn" type="button" aria-pressed="true">音：オン</button>
+      </div>
+
+      <div class="panels">
+        <section class="panel" aria-labelledby="matH">
+          <h2 id="matH">てもちの素材</h2>
+          <div class="mat-grid">
+            <div class="mat"><span class="dot" style="background:#d9a05a"></span><div><b id="matHide">0</b><span>皮（かわ）</span></div></div>
+            <div class="mat"><span class="dot" style="background:#efe9dc;border:1px solid #c9c2b2"></span><div><b id="matBone">0</b><span>骨（ほね）</span></div></div>
+            <div class="mat"><span class="dot" style="background:#9a6a38"></span><div><b id="matWood">0</b><span>木材（もくざい）</span></div></div>
+            <div class="mat"><span class="dot" style="background:#e8bc4a"></span><div><b id="matCoins">0</b><span>コイン（肉は自動でコインになる）</span></div></div>
+          </div>
+          <p class="muted">肉1つ = 5コイン。動物をつかまえると、自動でコインに変わるよ。</p>
+          <h2 style="margin-top:14px">木材を買う</h2>
+          <p class="cost">木材1本 = 10コイン</p>
+          <div class="row">
+            <button class="btn sub" id="buyWood1" type="button">木材 +1（10コイン）</button>
+            <button class="btn sub" id="buyWood10" type="button">木材 +10（100コイン）</button>
+          </div>
+          <p class="muted" id="shopMsg" role="status"></p>
+        </section>
+
+        <section class="panel" aria-labelledby="bowH">
+          <h2 id="bowH"><ruby>弓矢<rt>ゆみや</rt></ruby>のお店</h2>
+          <p>いまの弓矢：<b id="bowName">木の弓矢</b></p>
+          <p class="muted">弓矢（弓と矢のセット）を買うと、当たり判定がぐんと大きくなって当てやすくなるよ。動物が速くなったので、弓矢があると助かるよ。</p>
+          <p class="cost">いまのコイン：<span id="bowCoins">0</span>コイン</p>
+          <div class="row">
+            <button class="btn sub" id="buyBow1" type="button">強い弓矢を買う（150コイン）</button>
+            <span class="bow-status" id="bow1Status"></span>
+          </div>
+          <div class="row" style="margin-top:8px">
+            <button class="btn sub" id="buyBow2" type="button">名人の弓矢を買う（400コイン）</button>
+            <span class="bow-status" id="bow2Status"></span>
+          </div>
+          <p class="muted" id="bowMsg" role="status"></p>
+
+          <h2 style="margin-top:16px">動物の点数</h2>
+          <table class="points">
+            <tr><th>動物</th><th class="num">点数</th><th>もらえる素材</th></tr>
+            <tr><td>ウサギ（小さくて速い）</td><td class="num">10</td><td>肉1</td></tr>
+            <tr><td>鳥（空を飛ぶ）</td><td class="num">20</td><td>肉1</td></tr>
+            <tr><td>シカ</td><td class="num">30</td><td>肉2・皮1</td></tr>
+            <tr><td>イノシシ（速い）</td><td class="num">50</td><td>肉2・皮1・骨1</td></tr>
+            <tr><td>クマ（レアで大きい）</td><td class="num">100</td><td>肉3・皮2・骨1</td></tr>
+          </table>
+        </section>
+
+        <section class="panel wide" aria-labelledby="houseH">
+          <h2 id="houseH">家づくり</h2>
+          <p class="muted">建てる前に、屋根の形と壁の色を自分で選べるよ。選ぶと下の家の絵が変わるよ。</p>
+          <p style="margin-bottom:4px"><b>屋根の形</b></p>
+          <div class="choices" role="group" aria-label="屋根の形">
+            <button class="choice" id="roofTri" type="button" aria-pressed="true">三角の屋根</button>
+            <button class="choice" id="roofFlat" type="button" aria-pressed="false">平らな屋根</button>
+          </div>
+          <p style="margin:12px 0 4px"><b>壁の色</b></p>
+          <div class="choices" role="group" aria-label="壁の色">
+            <button class="choice wall-choice" data-wall="#c98d54" type="button" aria-pressed="true"><span class="swatch" style="background:#c98d54"></span>木の色</button>
+            <button class="choice wall-choice" data-wall="#f4efe6" type="button" aria-pressed="false"><span class="swatch" style="background:#f4efe6"></span>白</button>
+            <button class="choice wall-choice" data-wall="#c05b4a" type="button" aria-pressed="false"><span class="swatch" style="background:#c05b4a"></span>赤</button>
+          </div>
+
+          <div class="yard" id="yard" style="margin-top:14px"></div>
+          <p class="stage-name" id="houseStageName">まだ家はないよ</p>
+
+          <p class="cost" id="nextCost" style="margin-top:10px"></p>
+          <div class="row">
+            <button class="btn" id="buildBtn" type="button">建てる</button>
+          </div>
+          <p class="muted" id="buildMsg" role="status"></p>
+          <p class="muted">家の段階：テント → 小屋 → 家 → 大きな家</p>
+        </section>
+      </div>
+
+      <div class="champion">みんなのチャンピオン記録：<b id="championScore">…</b> 点</div>
+    </main>
+
+    <script>
+      (function () {
+        "use strict";
+
+        var COUNT_BASE = "https://countapi.mileshilliard.com/api/v1";
+        var CHAMPION_KEY = "shuryou-hunter-champion-2026";
+        var PLAYS_KEY = "shuryou-hunter-plays-2026";
+
+        var ANIMALS = {
+          rabbit: { name: "ウサギ", score: 10, meat: 1, hide: 0, bone: 0, w: 74, speed: 0.46, weight: 30, fly: false },
+          bird:   { name: "鳥",     score: 20, meat: 1, hide: 0, bone: 0, w: 84, speed: 0.42, weight: 25, fly: true },
+          deer:   { name: "シカ",   score: 30, meat: 2, hide: 1, bone: 0, w: 116, speed: 0.27, weight: 22, fly: false },
+          boar:   { name: "イノシシ", score: 50, meat: 2, hide: 1, bone: 1, w: 108, speed: 0.50, weight: 15, fly: false },
+          bear:   { name: "クマ",   score: 100, meat: 3, hide: 2, bone: 1, w: 142, speed: 0.18, weight: 8, fly: false }
+        };
+        var ANIMAL_KEYS = Object.keys(ANIMALS);
+        var TOTAL_WEIGHT = ANIMAL_KEYS.reduce(function (s, k) { return s + ANIMALS[k].weight; }, 0);
+
+        var BOWS = [
+          { name: "木の弓矢", bonus: 0 },
+          { name: "強い弓矢", bonus: 16, cost: 150 },
+          { name: "名人の弓矢", bonus: 34, cost: 400 }
+        ];
+
+        var HOUSE_STAGES = [
+          { name: "まだ家はないよ", cost: null },
+          { name: "テント", cost: { hide: 5 } },
+          { name: "小屋", cost: { wood: 10, hide: 5 } },
+          { name: "家", cost: { wood: 20, bone: 10, hide: 10 } },
+          { name: "大きな家", cost: { wood: 30, bone: 20, hide: 15 } }
+        ];
+        var COST_LABEL = { wood: "木材", hide: "皮", bone: "骨" };
+
+        var state = {
+          playing: false, paused: false, sound: true,
+          timeLeft: 60, spawnTimer: 0, lastTs: 0, raf: 0,
+          animals: [], score: 0, coins: 0, hide: 0, bone: 0, wood: 0,
+          totalCaught: 0, bow: 0, house: 0,
+          roof: "tri", wall: "#c98d54",
+          huntScore: 0, huntCaught: 0, huntCoins: 0,
+          champion: null
+        };
+
+        var stage = document.getElementById("stage");
+        var startOverlay = document.getElementById("startOverlay");
+        var pauseOverlay = document.getElementById("pauseOverlay");
+        var resultOverlay = document.getElementById("resultOverlay");
+        var resultLines = document.getElementById("resultLines");
+
+        var els = {
+          score: document.getElementById("hudScore"),
+          coins: document.getElementById("hudCoins"),
+          time: document.getElementById("hudTime"),
+          timeChip: document.getElementById("timeChip"),
+          caught: document.getElementById("hudCaught"),
+          hide: document.getElementById("matHide"),
+          bone: document.getElementById("matBone"),
+          wood: document.getElementById("matWood"),
+          matCoins: document.getElementById("matCoins"),
+          bowName: document.getElementById("bowName"),
+          champion: document.getElementById("championScore"),
+          pauseBtn: document.getElementById("pauseBtn"),
+          yard: document.getElementById("yard"),
+          houseStageName: document.getElementById("houseStageName"),
+          nextCost: document.getElementById("nextCost"),
+          buildBtn: document.getElementById("buildBtn"),
+          buildMsg: document.getElementById("buildMsg"),
+          shopMsg: document.getElementById("shopMsg"),
+          bowMsg: document.getElementById("bowMsg"),
+          buyBow1: document.getElementById("buyBow1"),
+          buyBow2: document.getElementById("buyBow2"),
+          bowCoins: document.getElementById("bowCoins"),
+          bow1Status: document.getElementById("bow1Status"),
+          bow2Status: document.getElementById("bow2Status")
+        };
+
+        /* ---------------- Sound (WebAudio) ---------------- */
+        var audioCtx = null;
+        function ensureAudio() {
+          if (!state.sound) return null;
+          if (!audioCtx) {
+            try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; }
+          }
+          if (audioCtx && audioCtx.state === "suspended") { audioCtx.resume(); }
+          return audioCtx;
+        }
+        function tone(freq, dur, type, vol, when, slideTo) {
+          var ctx = ensureAudio(); if (!ctx) return;
+          var t = ctx.currentTime + (when || 0);
+          var osc = ctx.createOscillator(); var gain = ctx.createGain();
+          osc.type = type || "sine"; osc.frequency.setValueAtTime(freq, t);
+          if (slideTo) { osc.frequency.exponentialRampToValueAtTime(slideTo, t + dur); }
+          gain.gain.setValueAtTime(vol || 0.16, t);
+          gain.gain.exponentialRampToValueAtTime(0.001, t + dur);
+          osc.connect(gain); gain.connect(ctx.destination);
+          osc.start(t); osc.stop(t + dur + 0.02);
+        }
+        function sndHit() { tone(520, 0.12, "square", 0.12, 0, 180); tone(880, 0.1, "sine", 0.1, 0.03); }
+        function sndCoin() { tone(990, 0.09, "sine", 0.14, 0); tone(1320, 0.14, "sine", 0.14, 0.08); }
+        function sndMiss() { tone(160, 0.1, "sine", 0.07, 0, 110); }
+        function sndFanfare() { tone(523, 0.14, "triangle", 0.16, 0); tone(659, 0.14, "triangle", 0.16, 0.12); tone(784, 0.22, "triangle", 0.16, 0.24); }
+        function sndBuy() { tone(660, 0.1, "triangle", 0.14, 0); tone(880, 0.16, "triangle", 0.14, 0.09); }
+        function sndTree() { tone(140, 0.14, "square", 0.14, 0, 70); tone(90, 0.18, "sine", 0.16, 0.02, 55); }
+
+        /* ---------------- Animal drawings (SVG) ---------------- */
+        function animalSVG(type) {
+          switch (type) {
+            case "rabbit": return '<svg viewBox="0 0 100 92" aria-hidden="true">'
+              + '<ellipse cx="52" cy="64" rx="30" ry="19" fill="#ece7df"/>'
+              + '<circle cx="26" cy="60" r="9" fill="#ffffff"/>'
+              + '<circle cx="79" cy="50" r="14" fill="#ece7df"/>'
+              + '<ellipse cx="72" cy="20" rx="6" ry="20" fill="#ece7df"/><ellipse cx="72" cy="22" rx="3" ry="12" fill="#f2b8c6"/>'
+              + '<ellipse cx="86" cy="23" rx="6" ry="18" fill="#ece7df"/><ellipse cx="86" cy="25" rx="3" ry="10" fill="#f2b8c6"/>'
+              + '<circle cx="83" cy="48" r="2.6" fill="#2b2b2b"/><circle cx="92" cy="54" r="2.4" fill="#e88a9a"/>'
+              + '<ellipse cx="46" cy="82" rx="13" ry="5" fill="#ddd6ca"/><ellipse cx="72" cy="82" rx="11" ry="5" fill="#ddd6ca"/></svg>';
+            case "bird": return '<svg viewBox="0 0 100 72" aria-hidden="true">'
+              + '<path d="M26 40 L8 32 M26 45 L10 50" stroke="#3d84b8" stroke-width="5" stroke-linecap="round"/>'
+              + '<ellipse cx="50" cy="40" rx="27" ry="15" fill="#5aa7d6"/>'
+              + '<ellipse cx="52" cy="46" rx="18" ry="8" fill="#bfe0f2"/>'
+              + '<path d="M42 32 Q28 4 50 10 Q56 22 48 34 Z" fill="#3d84b8"/>'
+              + '<circle cx="74" cy="31" r="11" fill="#5aa7d6"/>'
+              + '<path d="M84 29 L98 34 L84 39 Z" fill="#f2a93b"/>'
+              + '<circle cx="77" cy="29" r="2.4" fill="#222"/></svg>';
+            case "deer": return '<svg viewBox="0 0 116 100" aria-hidden="true">'
+              + '<path d="M88 22 q-4 -14 6 -18 M88 22 q10 -10 18 -8 M94 26 q2 -12 12 -14" stroke="#8a5a2b" stroke-width="4" fill="none" stroke-linecap="round"/>'
+              + '<rect x="34" y="62" width="7" height="30" rx="3" fill="#a9713d"/><rect x="72" y="62" width="7" height="30" rx="3" fill="#a9713d"/>'
+              + '<rect x="44" y="64" width="7" height="28" rx="3" fill="#96622f"/><rect x="82" y="64" width="7" height="28" rx="3" fill="#96622f"/>'
+              + '<ellipse cx="58" cy="54" rx="34" ry="19" fill="#b57e46"/>'
+              + '<circle cx="44" cy="48" r="3" fill="#d9b078"/><circle cx="58" cy="56" r="3.4" fill="#d9b078"/><circle cx="70" cy="46" r="2.6" fill="#d9b078"/>'
+              + '<path d="M82 44 L96 24 L106 30 L96 50 Z" fill="#b57e46"/>'
+              + '<ellipse cx="102" cy="28" rx="11" ry="8" fill="#c08c50" transform="rotate(24 102 28)"/>'
+              + '<ellipse cx="94" cy="18" rx="6" ry="3.4" fill="#a9713d" transform="rotate(-30 94 18)"/>'
+              + '<circle cx="105" cy="27" r="2.4" fill="#2b2b2b"/><circle cx="111" cy="33" r="2.2" fill="#5a3a1e"/>'
+              + '<path d="M26 48 q-8 2 -9 10" stroke="#96622f" stroke-width="5" fill="none" stroke-linecap="round"/></svg>';
+            case "boar": return '<svg viewBox="0 0 112 88" aria-hidden="true">'
+              + '<rect x="34" y="58" width="8" height="24" rx="3" fill="#5f4630"/><rect x="76" y="58" width="8" height="24" rx="3" fill="#5f4630"/>'
+              + '<rect x="46" y="60" width="8" height="22" rx="3" fill="#52402c"/><rect x="64" y="60" width="8" height="22" rx="3" fill="#52402c"/>'
+              + '<ellipse cx="58" cy="46" rx="36" ry="22" fill="#6e5138"/>'
+              + '<path d="M30 32 q28 -14 56 -2 l-4 8 q-24 -9 -48 2 Z" fill="#4c3826"/>'
+              + '<circle cx="94" cy="46" r="13" fill="#7d5c3e"/>'
+              + '<ellipse cx="100" cy="50" rx="7" ry="5.6" fill="#a97d55"/>'
+              + '<circle cx="98" cy="49" r="1.7" fill="#3a2a1a"/><circle cx="103" cy="49" r="1.7" fill="#3a2a1a"/>'
+              + '<path d="M92 58 q-2 7 -8 8 q4 -6 3 -10 Z" fill="#f4efe2"/>'
+              + '<circle cx="88" cy="40" r="2.6" fill="#1e1e1e"/>'
+              + '<path d="M24 42 q-9 0 -11 8" stroke="#52402c" stroke-width="4" fill="none" stroke-linecap="round"/></svg>';
+            case "bear": return '<svg viewBox="0 0 130 108" aria-hidden="true">'
+              + '<rect x="38" y="76" width="13" height="26" rx="6" fill="#6b4a2e"/><rect x="82" y="76" width="13" height="26" rx="6" fill="#6b4a2e"/>'
+              + '<ellipse cx="66" cy="60" rx="42" ry="28" fill="#7d5836"/>'
+              + '<circle cx="102" cy="34" r="7" fill="#7d5836"/><circle cx="102" cy="34" r="3.4" fill="#a97d55"/>'
+              + '<circle cx="104" cy="46" r="19" fill="#7d5836"/>'
+              + '<ellipse cx="112" cy="52" rx="9" ry="7" fill="#a97d55"/>'
+              + '<circle cx="116" cy="49" r="2.6" fill="#2b1c10"/>'
+              + '<circle cx="102" cy="42" r="3" fill="#1e1e1e"/>'
+              + '<ellipse cx="52" cy="62" rx="16" ry="11" fill="#8f653d"/></svg>';
+          }
+          return "";
+        }
+
+        /* ---------------- House drawing (SVG) ---------------- */
+        function houseSVG() {
+          var wall = state.wall;
+          var roofColor = "#8a5a3b";
+          var roof;
+          if (state.house === 0) {
+            return '<svg viewBox="0 0 260 190" width="260" aria-hidden="true">'
+              + '<ellipse cx="60" cy="168" rx="34" ry="8" fill="#4c8a3d"/>'
+              + '<ellipse cx="205" cy="172" rx="40" ry="9" fill="#4c8a3d"/>'
+              + '<circle cx="130" cy="160" r="5" fill="#e8e4de"/><circle cx="146" cy="166" r="4" fill="#d8d2c8"/>'
+              + '<text x="130" y="100" text-anchor="middle" font-size="15" fill="#ffffff" font-weight="bold">まだ何もないよ</text></svg>';
+          }
+          if (state.house === 1) {
+            return '<svg viewBox="0 0 260 190" width="260" aria-hidden="true">'
+              + '<polygon points="130,30 215,160 45,160" fill="#cbb27a"/>'
+              + '<polygon points="130,30 215,160 130,160" fill="#bda76e"/>'
+              + '<polygon points="130,96 158,160 102,160" fill="#6e5138"/>'
+              + '<line x1="130" y1="30" x2="130" y2="52" stroke="#8a6d3b" stroke-width="4"/></svg>';
+          }
+          var s = state.house; // 2,3,4
+          var W = s === 2 ? 130 : (s === 3 ? 170 : 210);
+          var H = s === 2 ? 92 : (s === 3 ? 118 : 148);
+          var vbW = 260, vbH = 200;
+          var x = (vbW - W) / 2, groundY = 178, y = groundY - H;
+          var out = '<svg viewBox="0 0 ' + vbW + ' ' + vbH + '" width="' + Math.min(300, W + 50) + '" aria-hidden="true">';
+          if (state.roof === "tri") {
+            var rh = s === 2 ? 44 : 56;
+            out += '<polygon points="' + (x - 12) + ',' + y + ' ' + (x + W + 12) + ',' + y + ' ' + (x + W / 2) + ',' + (y - rh) + '" fill="' + roofColor + '"/>';
+            if (s >= 3) { out += '<rect x="' + (x + W - 34) + '" y="' + (y - rh + 8) + '" width="14" height="30" fill="#9a9186"/>'; }
+          } else {
+            out += '<rect x="' + (x - 10) + '" y="' + (y - 14) + '" width="' + (W + 20) + '" height="14" rx="4" fill="' + roofColor + '"/>';
+          }
+          out += '<rect x="' + x + '" y="' + y + '" width="' + W + '" height="' + H + '" fill="' + wall + '" stroke="rgba(0,0,0,0.18)" stroke-width="2"/>';
+          // door
+          var dw = s === 2 ? 30 : 36, dh = s === 2 ? 46 : 56;
+          var dx = x + W / 2 - dw / 2;
+          out += '<rect x="' + dx + '" y="' + (groundY - dh) + '" width="' + dw + '" height="' + dh + '" rx="4" fill="#7a5230"/>';
+          out += '<circle cx="' + (dx + dw - 8) + '" cy="' + (groundY - dh / 2) + '" r="3" fill="#e8bc4a"/>';
+          // windows
+          function win(wx, wy) {
+            return '<rect x="' + wx + '" y="' + wy + '" width="26" height="24" rx="3" fill="#bfe0f2" stroke="#7a5230" stroke-width="3"/>'
+              + '<line x1="' + (wx + 13) + '" y1="' + wy + '" x2="' + (wx + 13) + '" y2="' + (wy + 24) + '" stroke="#7a5230" stroke-width="2"/>';
+          }
+          out += win(x + 14, y + 18);
+          out += win(x + W - 40, y + 18);
+          if (s === 4) { out += win(x + 14, y + 76); out += win(x + W - 40, y + 76); }
+          if (s >= 3) { out += '<rect x="' + (x + W / 2 - 30) + '" y="' + (y - 4) + '" width="60" height="8" fill="#7a5230"/>'; }
+          out += "</svg>";
+          return out;
+        }
+
+        /* ---------------- Rendering ---------------- */
+        function updateBowButton(btn, statusEl, level) {
+          var def = BOWS[level];
+          if (state.bow >= level) {
+            btn.disabled = true;
+            btn.textContent = def.name + "（買ったよ）";
+            statusEl.textContent = "✓ 買ったよ";
+            statusEl.className = "bow-status done";
+            return;
+          }
+          btn.disabled = false;
+          btn.textContent = def.name + "を買う（" + def.cost + "コイン）";
+          if (level === 2 && state.bow < 1) {
+            statusEl.textContent = "先に「強い弓矢」を買ってね";
+            statusEl.className = "bow-status lack";
+          } else if (state.coins >= def.cost) {
+            statusEl.textContent = "買えるよ！";
+            statusEl.className = "bow-status ok";
+          } else {
+            statusEl.textContent = "コイン不足（あと" + (def.cost - state.coins) + "コイン）";
+            statusEl.className = "bow-status lack";
+          }
+        }
+        function renderHUD() {
+          els.score.textContent = state.score;
+          els.coins.textContent = state.coins;
+          els.matCoins.textContent = state.coins;
+          els.caught.textContent = state.totalCaught;
+          els.hide.textContent = state.hide;
+          els.bone.textContent = state.bone;
+          els.wood.textContent = state.wood;
+          els.time.textContent = Math.max(0, Math.ceil(state.timeLeft));
+          els.timeChip.classList.toggle("low", state.playing && state.timeLeft <= 10);
+          els.bowName.textContent = BOWS[state.bow].name;
+          els.bowCoins.textContent = state.coins;
+          updateBowButton(els.buyBow1, els.bow1Status, 1);
+          updateBowButton(els.buyBow2, els.bow2Status, 2);
+          renderHousePanel();
+        }
+        function renderChampion() {
+          els.champion.textContent = state.champion === null ? "…" : state.champion;
+        }
+        function costText(cost) {
+          if (!cost) return "";
+          return Object.keys(cost).map(function (k) { return COST_LABEL[k] + " " + cost[k]; }).join(" ＋ ");
+        }
+        function canAfford(cost) {
+          if (!cost) return false;
+          return Object.keys(cost).every(function (k) { return state[k] >= cost[k]; });
+        }
+        function renderHousePanel() {
+          els.yard.innerHTML = houseSVG();
+          els.houseStageName.textContent = "いまの家：" + HOUSE_STAGES[state.house].name;
+          if (state.house >= HOUSE_STAGES.length - 1) {
+            els.nextCost.textContent = "一番大きな家ができたよ！すごい！";
+            els.buildBtn.disabled = true;
+            els.buildBtn.textContent = "完成！";
+          } else {
+            var next = HOUSE_STAGES[state.house + 1];
+            els.nextCost.innerHTML = "次は「" + next.name + "」：ひつような素材は " + costText(next.cost);
+            els.buildBtn.disabled = !canAfford(next.cost);
+            els.buildBtn.textContent = "「" + next.name + "」を建てる";
+          }
+        }
+
+        /* ---------------- Obstacle trees ---------------- */
+        var TREES = [];
+        function treeSVG() {
+          return '<svg viewBox="0 0 100 190" aria-hidden="true">'
+            + '<rect x="43" y="104" width="14" height="84" rx="5" fill="#7a5230"/>'
+            + '<rect x="47" y="104" width="5" height="84" fill="#8f653d"/>'
+            + '<path d="M50 128 q-16 -4 -24 -18 M50 142 q15 -3 22 -16" stroke="#7a5230" stroke-width="7" fill="none" stroke-linecap="round"/>'
+            + '<circle cx="50" cy="56" r="44" fill="#3f7a34"/>'
+            + '<circle cx="26" cy="84" r="28" fill="#47873c"/>'
+            + '<circle cx="74" cy="84" r="28" fill="#47873c"/>'
+            + '<circle cx="38" cy="44" r="16" fill="#559547" opacity="0.8"/>'
+            + '<circle cx="64" cy="66" r="12" fill="#559547" opacity="0.7"/>'
+            + '</svg>';
+        }
+        function buildTrees() {
+          var defs = [
+            { left: "13%", w: 92 },
+            { left: "44%", w: 118 },
+            { left: "73%", w: 84 }
+          ];
+          defs.forEach(function (d) {
+            var el = document.createElement("div");
+            el.className = "tree";
+            el.style.left = d.left;
+            el.style.width = d.w + "px";
+            el.innerHTML = treeSVG();
+            stage.appendChild(el);
+            TREES.push({ el: el });
+          });
+        }
+        function treeRect(t) {
+          var sr = stage.getBoundingClientRect();
+          var r = t.el.getBoundingClientRect();
+          return { x: r.left - sr.left, y: r.top - sr.top, w: r.width, h: r.height };
+        }
+        // Returns the tree whose trunk/canopy the point hits, or null.
+        function treeAt(pt) {
+          for (var i = 0; i < TREES.length; i++) {
+            var rc = treeRect(TREES[i]);
+            if (pt.x < rc.x - 4 || pt.x > rc.x + rc.w + 4) continue;
+            var lx = (pt.x - rc.x) / rc.w * 100;   // SVG coords 0..100
+            var ly = (pt.y - rc.y) / rc.h * 190;   // SVG coords 0..190
+            var inCanopy =
+              Math.pow(lx - 50, 2) + Math.pow(ly - 56, 2) < 46 * 46 ||
+              Math.pow(lx - 26, 2) + Math.pow(ly - 84, 2) < 30 * 30 ||
+              Math.pow(lx - 74, 2) + Math.pow(ly - 84, 2) < 30 * 30;
+            var inTrunk = lx > 40 && lx < 60 && ly > 100 && ly < 190;
+            if (inCanopy || inTrunk) return TREES[i];
+          }
+          return null;
+        }
+        function animalOverlapsTree(a, t) {
+          var rc = treeRect(t);
+          return a.x < rc.x + rc.w && a.x + a.w > rc.x && a.y < rc.y + rc.h && a.y + a.h > rc.y;
+        }
+        function shakeTree(t) {
+          t.el.classList.remove("shake");
+          void t.el.offsetWidth;
+          t.el.classList.add("shake");
+          setTimeout(function () { t.el.classList.remove("shake"); }, 480);
+        }
+
+        /* ---------------- Game loop ---------------- */
+        function pickAnimalType() {
+          var r = Math.random() * TOTAL_WEIGHT;
+          for (var i = 0; i < ANIMAL_KEYS.length; i++) {
+            r -= ANIMALS[ANIMAL_KEYS[i]].weight;
+            if (r <= 0) return ANIMAL_KEYS[i];
+          }
+          return "rabbit";
+        }
+        function spawnAnimal() {
+          var type = pickAnimalType();
+          var def = ANIMALS[type];
+          var rect = stage.getBoundingClientRect();
+          var fromLeft = Math.random() < 0.5;
+          var dir = fromLeft ? 1 : -1;
+          var w = def.w;
+          var h = w * 0.82;
+          var y;
+          if (def.fly) { y = 14 + Math.random() * rect.height * 0.26; }
+          else { y = rect.height - h - 6 - Math.random() * rect.height * 0.20; }
+          var behind = !def.fly && Math.random() < 0.55;
+          var el = document.createElement("div");
+          el.className = "animal";
+          el.style.width = w + "px";
+          el.style.zIndex = def.fly ? 24 : (behind ? 8 + Math.floor(Math.random() * 4) : 20 + Math.floor(Math.random() * 5));
+          var body = document.createElement("div");
+          body.className = "body";
+          body.innerHTML = animalSVG(type);
+          if (dir < 0) { body.style.transform = "scaleX(-1)"; }
+          el.appendChild(body);
+          stage.appendChild(el);
+          var a = {
+            type: type, def: def, el: el, body: body,
+            x: fromLeft ? -w - 10 : rect.width + 10,
+            y: y, w: w, h: h, dir: dir, behind: behind,
+            baseSpeed: def.speed * rect.width * (0.9 + Math.random() * 0.5),
+            dashT: 0,
+            turnT: 0.9 + Math.random() * 1.8,
+            phase: Math.random() * Math.PI * 2,
+            hop: type === "rabbit" ? 12 : (def.fly ? 9 : 3)
+          };
+          state.animals.push(a);
+          placeAnimal(a, 0);
+        }
+        function placeAnimal(a, t) {
+          var bob = Math.abs(Math.sin(t * 0.006 + a.phase)) * a.hop;
+          if (a.def.fly) { bob = Math.sin(t * 0.004 + a.phase) * a.hop; }
+          a.el.style.transform = "translate(" + a.x + "px," + a.y + "px)";
+          a.body.style.translate = "0 " + (-bob) + "px";
+        }
+        function removeAnimal(a) {
+          if (a.el.parentNode) { a.el.parentNode.removeChild(a.el); }
+          var i = state.animals.indexOf(a);
+          if (i >= 0) { state.animals.splice(i, 1); }
+        }
+        function clearAnimals() {
+          state.animals.slice().forEach(removeAnimal);
+        }
+
+        function loop(ts) {
+          if (!state.playing) return;
+          if (!state.lastTs) { state.lastTs = ts; }
+          var dt = Math.min(0.05, (ts - state.lastTs) / 1000);
+          state.lastTs = ts;
+          if (!state.paused) {
+            state.timeLeft -= dt;
+            state.spawnTimer -= dt;
+            if (state.spawnTimer <= 0 && state.animals.length < 7) {
+              spawnAnimal();
+              state.spawnTimer = 0.65 + Math.random() * 0.85;
+            }
+            var rectW = stage.clientWidth;
+            state.animals.slice().forEach(function (a) {
+              // 急な動き：ときどきダッシュしたり、向きを変えたりする
+              a.turnT -= dt;
+              if (a.turnT <= 0) {
+                a.turnT = 1.0 + Math.random() * 1.9;
+                if (Math.random() < 0.5) {
+                  a.dashT = 0.45;
+                } else {
+                  a.dir = -a.dir;
+                  a.body.style.transform = a.dir < 0 ? "scaleX(-1)" : "";
+                }
+              }
+              var speedMul = 1;
+              if (a.dashT > 0) { a.dashT -= dt; speedMul = 1.9; }
+              a.x += a.dir * a.baseSpeed * speedMul * dt;
+              if ((a.dir > 0 && a.x > rectW + 20) || (a.dir < 0 && a.x < -a.w - 20)) { removeAnimal(a); return; }
+              placeAnimal(a, ts);
+            });
+            els.time.textContent = Math.max(0, Math.ceil(state.timeLeft));
+            els.timeChip.classList.toggle("low", state.timeLeft <= 10);
+            if (state.timeLeft <= 0) { endHunt(); return; }
+          }
+          state.raf = requestAnimationFrame(loop);
+        }
+
+        function startHunt() {
+          ensureAudio();
+          clearAnimals();
+          state.playing = true; state.paused = false;
+          state.timeLeft = 60; state.spawnTimer = 0.2; state.lastTs = 0;
+          state.huntScore = 0; state.huntCaught = 0; state.huntCoins = 0;
+          startOverlay.classList.add("hidden");
+          resultOverlay.classList.add("hidden");
+          pauseOverlay.classList.add("hidden");
+          els.pauseBtn.disabled = false;
+          els.pauseBtn.textContent = "ポーズ";
+          // 遊んだ回数カウンター（画面には表示しない）
+          try { fetch(COUNT_BASE + "/hit/" + PLAYS_KEY).catch(function () {}); } catch (e) {}
+          cancelAnimationFrame(state.raf);
+          state.raf = requestAnimationFrame(loop);
+          renderHUD();
+        }
+
+        function endHunt() {
+          state.playing = false;
+          cancelAnimationFrame(state.raf);
+          clearAnimals();
+          els.pauseBtn.disabled = true;
+          var newRecord = state.champion !== null && state.score > state.champion;
+          resultLines.innerHTML =
+            "スコア ＋" + state.huntScore + "点（合計 " + state.score + "点）<br>"
+            + "つかまえた動物：" + state.huntCaught + "匹<br>"
+            + "肉がコインに変わった：" + state.huntCoins + "コイン"
+            + (newRecord ? "<br>チャンピオン記録をぬりかえた！" : "");
+          resultOverlay.classList.remove("hidden");
+          sndFanfare();
+          updateChampion();
+          renderHUD();
+        }
+
+        function setPaused(p) {
+          if (!state.playing) return;
+          state.paused = p;
+          pauseOverlay.classList.toggle("hidden", !p);
+          els.pauseBtn.textContent = p ? "つづける" : "ポーズ";
+          if (!p) { state.lastTs = 0; }
+        }
+
+        /* ---------------- Tap to catch ---------------- */
+        function stagePoint(evt) {
+          var rect = stage.getBoundingClientRect();
+          var cx = (evt.touches && evt.touches[0]) ? evt.touches[0].clientX : evt.clientX;
+          var cy = (evt.touches && evt.touches[0]) ? evt.touches[0].clientY : evt.clientY;
+          return { x: cx - rect.left, y: cy - rect.top };
+        }
+        function showRing(x, y) {
+          var ring = document.createElement("div");
+          ring.className = "tap-ring";
+          ring.style.left = x + "px"; ring.style.top = y + "px";
+          stage.appendChild(ring);
+          setTimeout(function () { if (ring.parentNode) ring.parentNode.removeChild(ring); }, 380);
+        }
+        function showFloat(x, y, text) {
+          var f = document.createElement("div");
+          f.className = "float-text";
+          f.style.left = x + "px"; f.style.top = y + "px";
+          f.textContent = text;
+          stage.appendChild(f);
+          setTimeout(function () { if (f.parentNode) f.parentNode.removeChild(f); }, 980);
+        }
+        function showPoof(x, y) {
+          var p = document.createElement("div");
+          p.className = "poof";
+          p.style.left = x + "px"; p.style.top = y + "px";
+          stage.appendChild(p);
+          setTimeout(function () { if (p.parentNode) p.parentNode.removeChild(p); }, 430);
+        }
+
+        stage.addEventListener("pointerdown", function (evt) {
+          if (!state.playing || state.paused) return;
+          evt.preventDefault();
+          var pt = stagePoint(evt);
+          showRing(pt.x, pt.y);
+          var bonus = BOWS[state.bow].bonus;
+          var hit = null;
+          for (var i = state.animals.length - 1; i >= 0; i--) {
+            var a = state.animals[i];
+            var cx = a.x + a.w / 2, cy = a.y + a.h / 2;
+            var r = a.w * 0.38 + bonus + 2;
+            var dx = pt.x - cx, dy = pt.y - cy;
+            if (dx * dx + dy * dy <= r * r) { hit = a; break; }
+          }
+          var tree = treeAt(pt);
+          var blockedByTree = tree && (!hit || (hit.behind && animalOverlapsTree(hit, tree)));
+          if (blockedByTree) {
+            shakeTree(tree);
+            showFloat(pt.x, Math.max(28, pt.y - 14), "木に当たった！");
+            sndTree();
+            return;
+          }
+          if (hit) {
+            var def = hit.def;
+            var cx2 = hit.x + hit.w / 2, cy2 = hit.y + hit.h / 2;
+            removeAnimal(hit);
+            state.score += def.score;
+            state.huntScore += def.score;
+            state.huntCaught += 1;
+            state.totalCaught += 1;
+            var coinsGet = def.meat * 5;
+            state.coins += coinsGet;
+            state.huntCoins += coinsGet;
+            state.hide += def.hide;
+            state.bone += def.bone;
+            var parts = ["+" + def.score + "点"];
+            if (def.meat) parts.push("肉" + def.meat + "→" + coinsGet + "コイン");
+            if (def.hide) parts.push("皮+" + def.hide);
+            if (def.bone) parts.push("骨+" + def.bone);
+            showPoof(cx2, cy2);
+            showFloat(cx2, cy2, def.name + "！ " + parts.join(" "));
+            sndHit();
+            setTimeout(sndCoin, 70);
+            renderHUD();
+          } else {
+            sndMiss();
+          }
+        });
+
+        /* ---------------- Champion record (CountAPI) ---------------- */
+        function loadChampion() {
+          try {
+            fetch(COUNT_BASE + "/get/" + CHAMPION_KEY)
+              .then(function (r) { return r.json(); })
+              .then(function (d) {
+                if (d && typeof d.value === "number") { state.champion = d.value; }
+                else { state.champion = 0; }
+                renderChampion();
+              })
+              .catch(function () { state.champion = 0; renderChampion(); });
+          } catch (e) { state.champion = 0; renderChampion(); }
+        }
+        function updateChampion() {
+          if (state.champion === null) return;
+          if (state.score > state.champion) {
+            state.champion = state.score;
+            renderChampion();
+            try {
+              fetch(COUNT_BASE + "/set/" + CHAMPION_KEY + "?value=" + encodeURIComponent(state.score)).catch(function () {});
+            } catch (e) {}
+          }
+        }
+
+        /* ---------------- Buttons ---------------- */
+        document.getElementById("startBtn").addEventListener("click", startHunt);
+        document.getElementById("againBtn").addEventListener("click", startHunt);
+        els.pauseBtn.addEventListener("click", function () { setPaused(!state.paused); });
+        document.getElementById("resumeBtn").addEventListener("click", function () { setPaused(false); });
+
+        var soundBtn = document.getElementById("soundBtn");
+        soundBtn.addEventListener("click", function () {
+          state.sound = !state.sound;
+          soundBtn.textContent = state.sound ? "音：オン" : "音：オフ";
+          soundBtn.setAttribute("aria-pressed", state.sound ? "true" : "false");
+          if (state.sound) { sndBuy(); }
+        });
+
+        function buyWood(n) {
+          var cost = n * 10;
+          if (state.coins < cost) {
+            els.shopMsg.textContent = "コインが足りないよ。狩りで肉を集めよう。";
+            sndMiss();
+            return;
+          }
+          state.coins -= cost; state.wood += n;
+          els.shopMsg.textContent = "木材を" + n + "本買ったよ。";
+          sndBuy();
+          renderHUD();
+        }
+        document.getElementById("buyWood1").addEventListener("click", function () { buyWood(1); });
+        document.getElementById("buyWood10").addEventListener("click", function () { buyWood(10); });
+
+        function buyBow(level) {
+          if (state.bow >= level) return;
+          if (level === 2 && state.bow < 1) {
+            els.bowMsg.textContent = "先に「強い弓矢」を買ってね。";
+            return;
+          }
+          var cost = BOWS[level].cost;
+          if (state.coins < cost) {
+            els.bowMsg.textContent = "コインが足りないよ。あと" + (cost - state.coins) + "コイン必要だよ。狩りで肉を集めよう。";
+            sndMiss();
+            return;
+          }
+          state.coins -= cost; state.bow = level;
+          els.bowMsg.textContent = "「" + BOWS[level].name + "」を買ったよ！当たり判定が大きくなって、当てやすくなったよ。";
+          sndBuy();
+          renderHUD();
+        }
+        els.buyBow1.addEventListener("click", function () { buyBow(1); });
+        els.buyBow2.addEventListener("click", function () { buyBow(2); });
+
+        /* Roof & wall choices */
+        var roofTri = document.getElementById("roofTri");
+        var roofFlat = document.getElementById("roofFlat");
+        function setRoof(r) {
+          state.roof = r;
+          roofTri.setAttribute("aria-pressed", r === "tri" ? "true" : "false");
+          roofFlat.setAttribute("aria-pressed", r === "flat" ? "true" : "false");
+          renderHousePanel();
+        }
+        roofTri.addEventListener("click", function () { setRoof("tri"); });
+        roofFlat.addEventListener("click", function () { setRoof("flat"); });
+
+        var wallBtns = document.querySelectorAll(".wall-choice");
+        wallBtns.forEach(function (btn) {
+          btn.addEventListener("click", function () {
+            state.wall = btn.getAttribute("data-wall");
+            wallBtns.forEach(function (b) { b.setAttribute("aria-pressed", b === btn ? "true" : "false"); });
+            renderHousePanel();
+          });
+        });
+
+        els.buildBtn.addEventListener("click", function () {
+          var next = HOUSE_STAGES[state.house + 1];
+          if (!next || !next.cost) return;
+          if (!canAfford(next.cost)) {
+            els.buildMsg.textContent = "素材が足りないよ。狩りと買い物で集めよう。";
+            sndMiss();
+            return;
+          }
+          Object.keys(next.cost).forEach(function (k) { state[k] -= next.cost[k]; });
+          state.house += 1;
+          els.buildMsg.textContent = "「" + next.name + "」ができたよ！";
+          sndFanfare();
+          renderHUD();
+        });
+
+        document.addEventListener("visibilitychange", function () {
+          if (document.hidden && state.playing && !state.paused) { setPaused(true); }
+        });
+
+        buildTrees();
+        renderHUD();
+        renderChampion();
+        loadChampion();
+      })();
+    </script>
+  </body>
+</html>
