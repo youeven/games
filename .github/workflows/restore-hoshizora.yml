@@ -1,0 +1,24 @@
+name: Restore hoshizora wallpaper
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore wallpaper file as hoshizora.html
+        run: |
+          git config user.name "youeven"
+          git config user.email "youeven@users.noreply.github.com"
+          git show 8e50da8:xing-kong-nobi-zhi.html > hoshizora.html
+          test "$(stat -c%s hoshizora.html)" = "5112785"
+          git add hoshizora.html
+          git commit -m "Add hoshizora.html"
+          git push
